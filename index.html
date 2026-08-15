@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grade 9 Mathematics AI Training System</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    background: #000;
+  }
+  #cam {
+    position: fixed;
+    inset: 0;
+    background: #f4f7f9;
+    color: #1a202c;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 40px 20px;
+    display: block;
+  }
+  #cam-in {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  }
+  #t {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 5px;
+    color: #2b6cb0;
+    user-select: none;
+    cursor: default;
+  }
+  .sub {
+    text-align: center;
+    font-size: 14px;
+    color: #4a5568;
+    margin-bottom: 30px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .ai-badge {
+    display: inline-block;
+    background: #ebf8ff;
+    color: #3182ce;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .prob {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    background: #fafcff;
+    transition: all 0.2s;
+  }
+  .prob:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    border-color: #cbd5e0;
+  }
+  .prob-t {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+  .prob-q {
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    color: #1a202c;
+    margin-bottom: 15px;
+  }
+  .ans-grp {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .ans-inp {
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 16px;
+    outline: none;
+    transition: border 0.2s;
+    width: 150px;
+  }
+  .ans-inp:focus {
+    border-color: #4299e1;
+  }
+  .ans-btn {
+    padding: 10px 20px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .ans-btn:hover {
+    background: #3182ce;
+  }
+  .res {
+    margin-left: 10px;
+    font-weight: 700;
+  }
+  .res.c {
+    color: #48bb78;
+  }
+  .res.w {
+    color: #e53e3e;
+  }
+  .gen-prob {
+    padding: 15px 20px;
+    border-bottom: 1px solid #edf2f7;
+    color: #4a5568;
+  }
+  .gen-prob:last-child {
+    border-bottom: none;
+  }
+  .foot {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #718096;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  #lnc {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    padding: 24px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    gap: 24px;
+    z-index: 50;
+  }
+  .lnc-ctrl {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .inp-grp {
+    display: flex;
+    gap: 8px;
+  }
+  .lnc-inp {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    background: #1f2937;
+    border: 2px solid #374151;
+    border-radius: 8px;
+    color: #fff;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .lnc-inp:focus {
+    border-color: #3b82f6;
+  }
+  .btn {
+    padding: 0 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: #2563eb;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .crd {
+    background: #111827;
+    border: 2px solid currentColor;
+    border-radius: 12px;
+    padding: 52px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .15s ease;
+  }
+  .crd:hover {
+    transform: translateY(-2px);
+  }
+  .crd-t {
+    font-size: 16px;
+    font-weight: 700;
+    word-break: break-all;
+  }
+  iframe {
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    display: none;
+    contain: layout paint;
+    transform: translateZ(0);
+    z-index: 10;
+    position: absolute;
+    inset: 0;
+  }
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    .grid { grid-template-columns: 1fr; }
+    .inp-grp { flex-direction: column; }
+    .btn { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cam">
+  <div id="cam-in">
+    <div style="text-align: center;">
+      <div class="ai-badge">AI Optimized Core Curriculum</div>
+    </div>
+    <div id="t">Grade 9 Mathematics Advanced Practice</div>
+    <div class="sub">Personalized Learning Module 365</div>
+    
+    <div id="mc"></div>
+
+    <div class="foot">
+      Advanced AI EdTech Solutions Corp.<br>
+      1-2-3 Tech Park, Minato-ku, Tokyo 105-0000<br>
+      Tel: 03-9999-8888 | Support: support@aiedtech.example.com<br>
+      &copy; 2026 Advanced AI EdTech Solutions Corp. All rights reserved.
+    </div>
+  </div>
+</div>
+
+<div id="lnc">
+  <div class="lnc-ctrl">
+    <div class="inp-grp">
+      <input type="text" id="cu-inp" class="lnc-inp" placeholder="https://" autocomplete="off">
+      <button id="cu-btn" class="btn">GO</button>
+    </div>
+    <input type="text" id="s-inp" class="lnc-inp" placeholder="Search..." autocomplete="off">
+  </div>
+
+  <div class="grid" id="grd">
+    <div class="crd" data-url="https://bloxd.io/" style="color:#22c55e"><div class="crd-t">bloxd.io</div></div>
+    <div class="crd" data-url="https://staging.bloxd.io/" style="color:#eab308"><div class="crd-t">staging.bloxd.io</div></div>
+    <div class="crd" data-url="https://bloxd.dev/" style="color:#a855f7"><div class="crd-t">bloxd.dev</div></div>
+    <div class="crd" data-url="https://bloxd.com/" style="color:#3b82f6"><div class="crd-t">bloxd.com</div></div>
+    <div class="crd" data-url="https://bloxdhop.io/" style="color:#14b8a6"><div class="crd-t">bloxdhop.io</div></div>
+    <div class="crd" data-url="https://eviltower.io/" style="color:#ef4444"><div class="crd-t">eviltower.io</div></div>
+    <div class="crd" data-url="https://doodlecube.io/" style="color:#38bdf8"><div class="crd-t">doodlecube.io</div></div>
+    <div class="crd" data-url="https://skillhub.vip/" style="color:#f97316"><div class="crd-t">skillhub.vip</div></div>
+    <div class="crd" data-url="https://bloxed.space/" style="color:#f43f5e"><div class="crd-t">bloxed.space</div></div>
+    <div class="crd" data-url="https://bloxed.net/" style="color:#fb7185"><div class="crd-t">bloxed.net</div></div>
+    <div class="crd" data-url="https://bloxdio.space/" style="color:#60a5fa"><div class="crd-t">bloxdio.space</div></div>
+    <div class="crd" data-url="https://bloxdk12.com/" style="color:#c084fc"><div class="crd-t">bloxdk12.com</div></div>
+    <div class="crd" data-url="https://playbloxd.com/" style="color:#22d3ee"><div class="crd-t">playbloxd.com</div></div>
+    <div class="crd" data-url="https://unblockedbloxd.com/" style="color:#f87171"><div class="crd-t">unblockedbloxd.com</div></div>
+    <div class="crd" data-url="https://unblockedbloxd.us" style="color:#fb7185"><div class="crd-t">unblockedbloxd.us</div></div>
+    <div class="crd" data-url="https://bloxdunblocked.com/" style="color:#ef4444"><div class="crd-t">bloxdunblocked.com</div></div>
+    <div class="crd" data-url="https://bloxdunblocked.space/" style="color:#f43f5e"><div class="crd-t">bloxdunblocked.space</div></div>
+    <div class="crd" data-url="https://bloxdunblocked.org/" style="color:#fb7185"><div class="crd-t">bloxdunblocked.org</div></div>
+    <div class="crd" data-url="https://bloxdunblocked.work/" style="color:#f87171"><div class="crd-t">bloxdunblocked.work</div></div>
+    <div class="crd" data-url="https://unbloxd.com/" style="color:#fb923c"><div class="crd-t">unbloxd.com</div></div>
+    <div class="crd" data-url="https://unbloxd.site/" style="color:#fdba74"><div class="crd-t">unbloxd.site</div></div>
+  </div>
+</div>
+
+<iframe id="gm" 
+  sandbox="allow-downloads allow-downloads-without-user-activation allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation allow-top-navigation-by-user-activation allow-top-navigation-to-custom-protocols"
+  allow="accelerometer; ambient-light-sensor; attribution-reporting; autoplay; bluetooth; browsing-topics; camera; clipboard-read; clipboard-write; compute-pressure; cross-origin-isolated; direct-sockets; display-capture; encrypted-media; fullscreen; gamepad; geolocation; gyroscope; hid; identity-credentials-get; idle-detection; local-fonts; magnetometer; microphone; midi; otp-credentials; payment; picture-in-picture; private-aggregation; publickey-credentials-get; screen-wake-lock; serial; speaker-selection; storage-access; usb; web-share; window-management; xr-spatial-tracking">
+</iframe>
+
+<script>
+  const mc = document.getElementById('mc');
+  const qa = [
+    { q: "Solve for x: 3x = 12", a: "4" },
+    { q: "Calculate: 15 / 3 + 2", a: "7" },
+    { q: "Solve for x: x - 7 = -2", a: "5" },
+    { q: "Calculate: 5 * 5", a: "25" },
+    { q: "Solve for x: x/2 = 5", a: "10" },
+    { q: "Calculate: 10 - 2 * 3", a: "4" },
+    { q: "Solve for x: 2x + 4 = 14", a: "5" },
+    { q: "Calculate: 100 / 25", a: "4" },
+    { q: "Solve for x (x>0): x^2 = 36", a: "6" },
+    { q: "Solve for x: 12 + x = 20", a: "8" }
+  ];
+
+  for (let i = 1; i <= 365; i++) {
+    const d = document.createElement('div');
+    if (i <= 10) {
+      d.className = 'prob';
+      const cur = qa[i-1];
+      d.innerHTML = `
+        <div class="prob-t">Day ${i}</div>
+        <div class="prob-q">${cur.q}</div>
+        <div class="ans-grp">
+          <input type="text" class="ans-inp" id="inp-${i}" autocomplete="off">
+          <button class="ans-btn" id="btn-${i}">Submit</button>
+          <span class="res" id="res-${i}"></span>
+        </div>
+      `;
+      mc.appendChild(d);
+      
+      document.getElementById(`btn-${i}`).addEventListener('click', () => {
+        const v = document.getElementById(`inp-${i}`).value.trim();
+        const r = document.getElementById(`res-${i}`);
+        if (v === cur.a) {
+          r.textContent = "Correct";
+          r.className = "res c";
+        } else {
+          r.textContent = "Incorrect";
+          r.className = "res w";
+        }
+      });
+    } else {
+      d.className = 'gen-prob';
+      const ty = i % 4;
+      let qt = "";
+      if (ty === 0) qt = `Factorize x^2 + ${i}x + ${(i/2)*(i/2)}`;
+      else if (ty === 1) qt = `Solve x^2 - ${i*i} = 0`;
+      else if (ty === 2) qt = `Expand (x + ${i%10})(x - ${i%5})`;
+      else qt = `Simplify the expression 2x + 3y - x + ${i}y`;
+      d.innerHTML = `<strong>Day ${i}:</strong> ${qt}`;
+      mc.appendChild(d);
+    }
+  }
+
+  let cc = 0;
+  let lt = 0;
+  document.getElementById('t').addEventListener('click', () => {
+    const n = Date.now();
+    if (n - lt > 1000) cc = 0;
+    cc++;
+    lt = n;
+    if (cc >= 5) {
+      document.getElementById('cam').style.display = 'none';
+      document.getElementById('lnc').style.display = 'flex';
+    }
+  });
+
+  const gm = document.getElementById("gm");
+  const lnc = document.getElementById("lnc");
+  const si = document.getElementById("s-inp");
+  const cui = document.getElementById("cu-inp");
+  const cub = document.getElementById("cu-btn");
+  const crds = document.querySelectorAll(".crd");
+
+  function opn(u) {
+    if (!u.startsWith('http://') && !u.startsWith('https://')) {
+      u = 'https://' + u;
+    }
+    gm.src = u;
+    gm.style.display = "block";
+    lnc.style.display = "none";
+  }
+
+  si.addEventListener("input", (e) => {
+    const st = e.target.value.toLowerCase();
+    crds.forEach(c => {
+      const tt = c.querySelector(".crd-t").textContent.toLowerCase();
+      if (tt.includes(st)) {
+        c.style.display = "block";
+      } else {
+        c.style.display = "none";
+      }
+    });
+  });
+
+  crds.forEach(c => {
+    c.addEventListener("click", () => {
+      opn(c.dataset.url);
+    });
+  });
+
+  cub.addEventListener("click", () => {
+    const u = cui.value.trim();
+    if (u !== "") opn(u);
+  });
+
+  cui.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const u = cui.value.trim();
+      if (u !== "") opn(u);
+    }
+  });
+</script>
+</body>
+</html>
