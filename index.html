@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Smart Math | 次世代型AI学習プラットフォーム</title>
+  <title>Ai-Math-Drill/MasterPro | 次世代型AI学習プラットフォーム</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
+      --primary: #0f172a;
+      --primary-hover: #1e293b;
+      --accent: #3b82f6;
       --bg-main: #f8fafc;
       --surface: #ffffff;
       --text-main: #0f172a;
@@ -24,145 +25,167 @@
     html, body {
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
       overflow: hidden;
     }
 
-    /* ログイン・偽装画面 */
     #camouflage {
       position: fixed;
       inset: 0;
       display: flex;
       flex-direction: column;
       z-index: 100;
-      background: var(--bg-main);
+      background: var(--surface);
       overflow-y: auto;
     }
 
     header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 32px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 24px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      z-index: 10;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      cursor: pointer;
+      cursor: default;
       user-select: none;
     }
 
     .brand-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--primary);
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
       color: white;
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
     }
 
     .brand-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-main);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary);
       letter-spacing: -0.5px;
     }
 
     .header-tag {
       font-size: 12px;
-      background: #eff6ff;
-      color: var(--primary);
-      padding: 4px 10px;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--accent);
+      padding: 6px 12px;
       border-radius: 999px;
-      font-weight: 600;
+      font-weight: 700;
+      backdrop-filter: blur(4px);
     }
 
-    .main-container {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      max-width: 1200px;
+    .split-layout {
+      display: flex;
       width: 100%;
-      margin: 40px auto;
-      gap: 32px;
-      padding: 0 24px;
+      min-height: 100vh;
     }
 
-    /* 左側：ログインパネル */
-    .login-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    .left-pane {
+      flex: 1;
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      padding: 0 8vw;
+      max-width: 600px;
+    }
+
+    .right-pane {
+      flex: 1;
+      background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2000&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      display: none;
+    }
+
+    .right-pane::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 20%);
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 60px;
     }
 
     .login-header {
-      margin-bottom: 24px;
+      margin-bottom: 32px;
     }
 
-    .login-header h2 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 8px;
+    .login-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      line-height: 1.2;
     }
 
     .login-header p {
-      font-size: 14px;
+      font-size: 15px;
       color: var(--text-muted);
+      line-height: 1.6;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .form-group label {
       display: block;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       color: var(--text-main);
     }
 
     .form-control {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
+      background: var(--bg-main);
     }
 
     .form-control:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      border-color: var(--accent);
+      background: var(--surface);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
     }
 
     .submit-btn {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       background: var(--primary);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 15px;
+      border-radius: 10px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
       margin-top: 8px;
     }
 
@@ -170,78 +193,52 @@
       background: var(--primary-hover);
     }
 
-    /* 右側：説明パネル */
-    .info-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+    .submit-btn:active {
+      transform: scale(0.98);
     }
 
-    .info-content h1 {
-      font-size: 26px;
-      font-weight: 800;
-      margin-bottom: 16px;
-      line-height: 1.3;
-      color: var(--text-main);
-    }
-
-    .info-content p {
-      font-size: 15px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .feature-list {
+    .features-mini {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 32px;
+      gap: 24px;
     }
 
-    .feature-item {
-      padding: 16px;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+    .feature-icon {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 12px;
+      color: var(--accent);
     }
 
-    .feature-item h3 {
-      font-size: 14px;
+    .feature-title {
+      font-size: 13px;
       font-weight: 700;
       margin-bottom: 4px;
-      color: var(--primary);
     }
 
-    .feature-item p {
+    .feature-desc {
       font-size: 12px;
       color: var(--text-muted);
-      margin: 0;
-      line-height: 1.4;
-    }
-
-    /* フッター（会社情報） */
-    footer {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 20px 32px;
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .footer-info {
       line-height: 1.5;
     }
 
-    /* 本命ランチャー画面 */
+    footer {
+      position: absolute;
+      bottom: 24px;
+      left: 40px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    @media (min-width: 900px) {
+      .right-pane {
+        display: block;
+      }
+    }
+
     #launcher {
       position: fixed;
       inset: 0;
@@ -281,14 +278,14 @@
     }
 
     .launcher-input:focus {
-      border-color: var(--primary);
+      border-color: var(--accent);
     }
 
     .btn-launch {
       padding: 0 24px;
       font-size: 15px;
       font-weight: 600;
-      background: var(--primary);
+      background: var(--accent);
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -317,7 +314,7 @@
 
     .launcher-card:hover {
       transform: translateY(-2px);
-      border-color: var(--primary);
+      border-color: var(--accent);
     }
 
     .launcher-title {
@@ -327,7 +324,6 @@
       word-break: break-all;
     }
 
-    /* ゲーム表示領域 */
     iframe {
       width: 100vw;
       height: 100vh;
@@ -337,90 +333,60 @@
       inset: 0;
       z-index: 10;
     }
-
-    @media (max-width: 868px) {
-      .main-container {
-        grid-template-columns: 1fr;
-        margin: 20px auto;
-      }
-      .feature-list {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 <body>
 
-  <!-- 偽装ログイン画面 -->
   <div id="camouflage">
     <header>
-      <!-- タイトルクリックで本命へ移行 -->
       <div class="brand" id="secret-trigger">
         <div class="brand-icon">M</div>
-        <div class="brand-title">AI Smart Math</div>
+        <div class="brand-title">Ai-Math-Drill/MasterPro</div>
       </div>
       <div class="header-tag">法人・教育機関向け Pro版</div>
     </header>
 
-    <div class="main-container">
-      <!-- 左：ログインフォーム -->
-      <div class="login-panel">
-        <div class="login-header">
-          <h2>アカウントログイン</h2>
-          <p>割当された受講生IDとパスワードを入力してください</p>
-        </div>
-        <form id="login-form">
-          <div class="form-group">
-            <label>受講生ID / アカウントメール</label>
-            <input type="text" class="form-control" placeholder="ST-XXXXXXXX" required>
+    <div class="split-layout">
+      <div class="left-pane">
+        <div class="login-container">
+          <div class="login-header">
+            <h1>Welcome Back</h1>
+            <p>システムにログインして、あなたに最適化された本日の学習カリキュラムを開始しましょう。</p>
           </div>
-          <div class="form-group">
-            <label>パスワード</label>
-            <input type="password" class="form-control" placeholder="••••••••" required>
-          </div>
-          <button type="submit" class="submit-btn">受講システムへログイン</button>
-        </form>
-      </div>
+          <form id="login-form">
+            <div class="form-group">
+              <label>受講生ID</label>
+              <input type="text" class="form-control" placeholder="ST-XXXXXXXX" required>
+            </div>
+            <div class="form-group">
+              <label>パスワード</label>
+              <input type="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="submit-btn">システムへログイン</button>
+          </form>
 
-      <!-- 右：説明コンテンツ -->
-      <div class="info-panel">
-        <div class="info-content">
-          <h1>リアルタイム学習適応エンジン搭載<br>次世代AIドリルシステム</h1>
-          <p>AI Smart Mathは、生徒一人ひとりの理解度・解答速度・誤答傾向をミリ秒単位で解析。無駄のない最適化された問題生成アルゴリズムにより、従来の3倍の効率で幾何・代数の本質的理解へと導きます。</p>
-          
-          <div class="feature-list">
-            <div class="feature-item">
-              <h3>動的難易度調整 (DDA)</h3>
-              <p>解答データに基づき、常に「最適成長ゾーン」の問題をリアルタイム自動生成します。</p>
+          <div class="features-mini">
+            <div>
+              <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              <div class="feature-title">リアルタイム解析</div>
+              <div class="feature-desc">解答速度と正答率から最適問題を自動生成。</div>
             </div>
-            <div class="feature-item">
-              <h3>弱点自動診断エンジン</h3>
-              <p>つまづきの根本原因となった過去の単元を自動特定し、ピンポイントで補強します。</p>
-            </div>
-            <div class="feature-item">
-              <h3>学習定着度の可視化</h3>
-              <p>忘却曲線に基づいた最適な復習タイミングをAIが自動スケジュール設計。</p>
-            </div>
-            <div class="feature-item">
-              <h3>マルチデバイス同期</h3>
-              <p>校内端末、PC、タブレット間で進捗データをリアルタイムクラウド同期。</p>
+            <div>
+              <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <div class="feature-title">弱点自動診断</div>
+              <div class="feature-desc">過去の単元まで遡り、根本原因を特定。</div>
             </div>
           </div>
         </div>
       </div>
+      <div class="right-pane"></div>
     </div>
 
-    <!-- フッター（架空の組織・問い合わせ情報） -->
     <footer>
-      <div class="footer-info">
-        <strong>株式会社 エデュケーション・AI・テクノロジーズ (Education AI Technologies Corp.)</strong><br>
-        〒100-0001 東京都千代田区千代田 9-99 千代田AIシステムビル 14F | TEL: 03-9999-8822 (代表)
-      </div>
-      <div>&copy; Education AI Technologies Corp. All rights reserved.</div>
+      &copy; Education AI Technologies Corp. 〒100-0001 東京都千代田区千代田 9-99
     </footer>
   </div>
 
-  <!-- 本命ランチャー画面 -->
   <div id="launcher">
     <div class="launcher-controls">
       <div class="input-group">
@@ -431,7 +397,6 @@
     </div>
 
     <div class="launcher-grid" id="grid">
-      <!-- 指定された全ドメイン（math.walesを最上部に配置） -->
       <div class="launcher-card" data-url="https://math.wales/"><div class="launcher-title">math.wales</div></div>
       <div class="launcher-card" data-url="https://unblockedbloxd.com/"><div class="launcher-title">unblockedbloxd.com</div></div>
       <div class="launcher-card" data-url="https://unblockedbloxd.us"><div class="launcher-title">unblockedbloxd.us</div></div>
@@ -474,26 +439,36 @@
     </div>
   </div>
 
-  <!-- ゲーム表示用 iframe (Cookie/Storage/通信の完全許諾) -->
   <iframe id="game-iframe" 
     sandbox="allow-downloads allow-downloads-without-user-activation allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation allow-top-navigation-by-user-activation allow-top-navigation-to-custom-protocols"
     allow="accelerometer; ambient-light-sensor; attribution-reporting; autoplay; bluetooth; browsing-topics; camera; clipboard-read; clipboard-write; compute-pressure; cross-origin-isolated; direct-sockets; display-capture; encrypted-media; gamepad; geolocation; gyroscope; hid; identity-credentials-get; idle-detection; local-fonts; magnetometer; microphone; midi; otp-credentials; payment; picture-in-picture; private-aggregation; publickey-credentials-get; screen-wake-lock; serial; speaker-selection; storage-access; usb; web-share; window-management; xr-spatial-tracking">
   </iframe>
 
   <script>
-    // 1. ログインフォーム送信の無効化（何を入力しても画面遷移しない）
     document.getElementById('login-form').addEventListener('submit', (e) => {
       e.preventDefault();
     });
 
-    // 2. 秘密のトリガー（サイトタイトルの「AI Smart Math」をクリックで本命起動）
+    let clickCount = 0;
+    let lastClickTime = 0;
+    
     document.getElementById('secret-trigger').addEventListener('click', () => {
-      document.getElementById('camouflage').style.display = 'none';
-      document.getElementById('launcher').style.display = 'flex';
-      document.title = "App Launcher";
+      const currentTime = new Date().getTime();
+      if (currentTime - lastClickTime < 600) {
+        clickCount++;
+      } else {
+        clickCount = 1;
+      }
+      lastClickTime = currentTime;
+
+      if (clickCount >= 5) {
+        document.getElementById('camouflage').style.display = 'none';
+        document.getElementById('launcher').style.display = 'flex';
+        document.title = "App Launcher";
+        clickCount = 0;
+      }
     });
 
-    // 3. ランチャー制御システム
     const iframe = document.getElementById("game-iframe");
     const launcher = document.getElementById("launcher");
     const searchInput = document.getElementById("search-input");
@@ -510,7 +485,6 @@
       launcher.style.display = "none";
     }
 
-    // 検索フィルタリング
     searchInput.addEventListener("input", (e) => {
       const keyword = e.target.value.toLowerCase();
       cards.forEach(card => {
@@ -519,14 +493,12 @@
       });
     });
 
-    // カードクリックで起動
     cards.forEach(card => {
       card.addEventListener("click", () => {
         openApp(card.dataset.url);
       });
     });
 
-    // カスタムURL起動
     customUrlBtn.addEventListener("click", () => {
       const url = customUrlInput.value.trim();
       if (url !== "") openApp(url);
