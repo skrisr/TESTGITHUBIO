@@ -6,14 +6,14 @@
   <title>Ai-Math-Drill/MasterPro | 次世代型AI学習プラットフォーム</title>
   <style>
     :root {
-      --primary: #0f172a;
-      --primary-hover: #1e293b;
-      --accent: #3b82f6;
-      --bg-main: #f8fafc;
+      --primary: #1e293b;
+      --primary-hover: #0f172a;
+      --accent: #2563eb;
+      --bg-main: #f1f5f9;
       --surface: #ffffff;
-      --text-main: #0f172a;
+      --text-main: #1e293b;
       --text-muted: #64748b;
-      --border: #e2e8f0;
+      --border: #cbd5e1;
     }
 
     * {
@@ -25,32 +25,30 @@
     html, body {
       width: 100%;
       height: 100%;
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     #camouflage {
-      position: fixed;
-      inset: 0;
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       z-index: 100;
-      background: var(--surface);
-      overflow-y: auto;
+      background: var(--bg-main);
     }
 
     header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      padding: 24px 40px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      z-index: 10;
+      width: 100%;
     }
 
     .brand {
@@ -62,130 +60,109 @@
     }
 
     .brand-icon {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       background: var(--accent);
       color: white;
-      border-radius: 10px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 20px;
-      box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+      font-weight: 700;
+      font-size: 16px;
     }
 
     .brand-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--primary);
-      letter-spacing: -0.5px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
     }
 
     .header-tag {
       font-size: 12px;
-      background: rgba(59, 130, 246, 0.1);
-      color: var(--accent);
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-weight: 700;
-      backdrop-filter: blur(4px);
+      background: #e2e8f0;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
     }
 
-    .split-layout {
-      display: flex;
+    .content-wrapper {
+      max-width: 1200px;
       width: 100%;
-      min-height: 100vh;
+      margin: 0 auto;
+      padding: 32px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex: 1;
     }
 
-    .left-pane {
-      flex: 1;
+    .top-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 0 8vw;
-      max-width: 600px;
     }
 
-    .right-pane {
-      flex: 1;
-      background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2000&auto=format&fit=crop');
-      background-size: cover;
-      background-position: center;
-      position: relative;
-      display: none;
+    .login-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
     }
 
-    .right-pane::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 20%);
-    }
-
-    .login-container {
-      width: 100%;
-      max-width: 420px;
-      margin-top: 60px;
-    }
-
-    .login-header {
-      margin-bottom: 32px;
-    }
-
-    .login-header h1 {
-      font-size: 32px;
-      font-weight: 800;
-      margin-bottom: 12px;
-      line-height: 1.2;
-    }
-
-    .login-header p {
-      font-size: 15px;
+    .login-card p {
+      font-size: 14px;
       color: var(--text-muted);
-      line-height: 1.6;
+      margin-bottom: 24px;
     }
 
     .form-group {
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     .form-group label {
       display: block;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--text-main);
+      margin-bottom: 6px;
     }
 
     .form-control {
       width: 100%;
-      padding: 14px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      font-size: 15px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
       outline: none;
-      transition: all 0.2s;
-      background: var(--bg-main);
+      background: #fff;
     }
 
     .form-control:focus {
       border-color: var(--accent);
-      background: var(--surface);
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
     }
 
     .submit-btn {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       background: var(--primary);
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      border-radius: 6px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
       margin-top: 8px;
     }
 
@@ -193,50 +170,86 @@
       background: var(--primary-hover);
     }
 
-    .submit-btn:active {
-      transform: scale(0.98);
+    .banner-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    .features-mini {
-      margin-top: 48px;
-      padding-top: 32px;
-      border-top: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
+    .banner-img {
+      width: 100%;
+      height: 180px;
+      background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
     }
 
-    .feature-icon {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 12px;
-      color: var(--accent);
+    .banner-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex: 1;
     }
 
-    .feature-title {
-      font-size: 13px;
+    .banner-body h3 {
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
 
-    .feature-desc {
-      font-size: 12px;
+    .banner-body p {
+      font-size: 13px;
       color: var(--text-muted);
       line-height: 1.5;
     }
 
-    footer {
-      position: absolute;
-      bottom: 24px;
-      left: 40px;
-      font-size: 12px;
-      color: var(--text-muted);
+    .info-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    @media (min-width: 900px) {
-      .right-pane {
-        display: block;
-      }
+    .info-section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .info-box {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .info-box strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 24px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: auto;
     }
 
     #launcher {
@@ -260,6 +273,21 @@
       gap: 12px;
     }
 
+    .ctrl-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
     .input-group {
       display: flex;
       gap: 8px;
@@ -274,7 +302,6 @@
       border-radius: 8px;
       color: #fff;
       outline: none;
-      transition: border-color 0.2s;
     }
 
     .launcher-input:focus {
@@ -333,6 +360,15 @@
       inset: 0;
       z-index: 10;
     }
+
+    @media (max-width: 768px) {
+      .top-section {
+        grid-template-columns: 1fr;
+      }
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -343,52 +379,70 @@
         <div class="brand-icon">M</div>
         <div class="brand-title">Ai-Math-Drill/MasterPro</div>
       </div>
-      <div class="header-tag">法人・教育機関向け Pro版</div>
+      <div class="header-tag">Standard Edition</div>
     </header>
 
-    <div class="split-layout">
-      <div class="left-pane">
-        <div class="login-container">
-          <div class="login-header">
-            <h1>Welcome Back</h1>
-            <p>システムにログインして、あなたに最適化された本日の学習カリキュラムを開始しましょう。</p>
-          </div>
+    <div class="content-wrapper">
+      <div class="top-section">
+        <div class="login-card">
+          <h2>受講生ログイン</h2>
+          <p>IDとパスワードを入力して演習画面へ進んでください。</p>
           <form id="login-form">
             <div class="form-group">
               <label>受講生ID</label>
-              <input type="text" class="form-control" placeholder="ST-XXXXXXXX" required>
+              <input type="text" class="form-control" placeholder="例: 12345678" required>
             </div>
             <div class="form-group">
               <label>パスワード</label>
               <input type="password" class="form-control" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="submit-btn">システムへログイン</button>
+            <button type="submit" class="submit-btn">ログイン</button>
           </form>
+        </div>
 
-          <div class="features-mini">
-            <div>
-              <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-              <div class="feature-title">リアルタイム解析</div>
-              <div class="feature-desc">解答速度と正答率から最適問題を自動生成。</div>
-            </div>
-            <div>
-              <svg class="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-              <div class="feature-title">弱点自動診断</div>
-              <div class="feature-desc">過去の単元まで遡り、根本原因を特定。</div>
-            </div>
+        <div class="banner-card">
+          <div class="banner-img"></div>
+          <div class="banner-body">
+            <h3>個別最適化学習プログラム</h3>
+            <p>単元ごとの定着度を自動判定し、一人ひとりの習熟度に応じた演習問題を自動で出題します。基礎から発展まで効率的なステップアップをサポート。</p>
           </div>
         </div>
       </div>
-      <div class="right-pane"></div>
+
+      <div class="info-section">
+        <h3>システム概要・利用案内</h3>
+        <div class="info-grid">
+          <div class="info-box">
+            <strong>カリキュラムについて</strong>
+            中学数学の全単元に対応。演習問題の解答履歴から弱点を自動抽出し、復習用カリキュラムを随時最適化します。
+          </div>
+          <div class="info-box">
+            <strong>動作環境</strong>
+            PC、タブレット、スマートフォン各端末のブラウザに対応しています。安定した通信環境下でご利用ください。
+          </div>
+          <div class="info-box">
+            <strong>運営・お問い合わせ</strong>
+            株式会社エデュケーション・テクノロジーズ<br>
+            東京都千代田区千代田 1-1<br>
+            TEL: 03-0000-0000
+          </div>
+        </div>
+      </div>
     </div>
 
     <footer>
-      &copy; Education AI Technologies Corp. 〒100-0001 東京都千代田区千代田 9-99
+      &copy; Education Technologies Corp. All rights reserved.
     </footer>
   </div>
 
   <div id="launcher">
     <div class="launcher-controls">
+      <div class="ctrl-row">
+        <span>アプリケーションランチャー</span>
+        <label class="toggle-label">
+          <input type="checkbox" id="iframe-toggle" checked> サイト内表示 (iframe) を有効にする
+        </label>
+      </div>
       <div class="input-group">
         <input type="text" id="custom-url-input" class="launcher-input" placeholder="https://..." autocomplete="off">
         <button id="custom-url-btn" class="btn-launch">開く</button>
@@ -475,14 +529,20 @@
     const customUrlInput = document.getElementById("custom-url-input");
     const customUrlBtn = document.getElementById("custom-url-btn");
     const cards = document.querySelectorAll(".launcher-card");
+    const iframeToggle = document.getElementById("iframe-toggle");
 
     function openApp(url) {
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
-      iframe.src = url;
-      iframe.style.display = "block";
-      launcher.style.display = "none";
+      
+      if (iframeToggle.checked) {
+        iframe.src = url;
+        iframe.style.display = "block";
+        launcher.style.display = "none";
+      } else {
+        window.location.href = url;
+      }
     }
 
     searchInput.addEventListener("input", (e) => {
