@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ai-Math-Drill/MasterPro | 次世代型AI学習プラットフォーム</title>
+  <link rel="icon" href="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=64&auto=format&fit=crop">
   <style>
     :root {
       --primary: #1e293b;
@@ -59,17 +60,11 @@
       user-select: none;
     }
 
-    .brand-icon {
+    .brand-logo {
       width: 32px;
       height: 32px;
-      background: var(--accent);
-      color: white;
+      object-fit: cover;
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
     }
 
     .brand-title {
@@ -246,10 +241,29 @@
       background: var(--surface);
       border-top: 1px solid var(--border);
       padding: 24px 16px;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 12px;
       color: var(--text-muted);
       margin-top: auto;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .footer-logo {
+      width: 20px;
+      height: 20px;
+      object-fit: cover;
+      border-radius: 4px;
     }
 
     #launcher {
@@ -376,7 +390,7 @@
   <div id="camouflage">
     <header>
       <div class="brand" id="secret-trigger">
-        <div class="brand-icon">M</div>
+        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=100&auto=format&fit=crop" alt="Logo" class="brand-logo">
         <div class="brand-title">Ai-Math-Drill/MasterPro</div>
       </div>
       <div class="header-tag">Standard Edition</div>
@@ -431,7 +445,11 @@
     </div>
 
     <footer>
-      &copy; Education Technologies Corp. All rights reserved.
+      <div class="footer-brand">
+        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=100&auto=format&fit=crop" alt="Logo" class="footer-logo">
+        <span>Education Technologies Corp.</span>
+      </div>
+      <div>&copy; Education Technologies Corp. All rights reserved.</div>
     </footer>
   </div>
 
