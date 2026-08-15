@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ai-Math-Drill/MasterPro | 次世代型AI学習プラットフォーム</title>
-  <link rel="icon" href="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=64&auto=format&fit=crop">
+  <link rel="icon" href="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=64&auto=format&fit=crop">
   <style>
     :root {
       --primary: #1e293b;
@@ -109,6 +109,23 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 120px;
+      height: 120px;
+      background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=300&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.12;
+      border-bottom-left-radius: 100%;
+      pointer-events: none;
     }
 
     .login-card h2 {
@@ -178,7 +195,7 @@
     .banner-img {
       width: 100%;
       height: 180px;
-      background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000&auto=format&fit=crop');
+      background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1000&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
     }
@@ -201,6 +218,47 @@
       font-size: 13px;
       color: var(--text-muted);
       line-height: 1.5;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feature-img {
+      width: 100%;
+      height: 120px;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .feature-1 { background-image: url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'); }
+    .feature-2 { background-image: url('https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=600&auto=format&fit=crop'); }
+    .feature-3 { background-image: url('https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop'); }
+
+    .feature-body {
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .feature-body strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
     }
 
     .info-section {
@@ -379,6 +437,9 @@
       .top-section {
         grid-template-columns: 1fr;
       }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
       .info-grid {
         grid-template-columns: 1fr;
       }
@@ -390,7 +451,7 @@
   <div id="camouflage">
     <header>
       <div class="brand" id="secret-trigger">
-        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=100&auto=format&fit=crop" alt="Logo" class="brand-logo">
+        <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=100&auto=format&fit=crop" alt="Logo" class="brand-logo">
         <div class="brand-title">Ai-Math-Drill/MasterPro</div>
       </div>
       <div class="header-tag">Standard Edition</div>
@@ -423,6 +484,30 @@
         </div>
       </div>
 
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-img feature-1"></div>
+          <div class="feature-body">
+            <strong>リアルタイム解析</strong>
+            解答スピードや正答率を多角的に分析し、現在の習熟度を可視化します。
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-img feature-2"></div>
+          <div class="feature-body">
+            <strong>弱点自動補強</strong>
+            間違えた問題の傾向から根本的なつまずき原因を特定し、重点的に出題します。
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-img feature-3"></div>
+          <div class="feature-body">
+            <strong>詳細な進捗レポート</strong>
+            日々の学習成果をグラフや数値でわかりやすく確認・管理できます。
+          </div>
+        </div>
+      </div>
+
       <div class="info-section">
         <h3>システム概要・利用案内</h3>
         <div class="info-grid">
@@ -438,7 +523,7 @@
             <strong>運営・お問い合わせ</strong>
             株式会社エデュケーション・テクノロジーズ<br>
             東京都千代田区千代田 1-1<br>
-            TEL: 03-0000-0000
+            TEL: 050-5742-6546
           </div>
         </div>
       </div>
@@ -446,7 +531,7 @@
 
     <footer>
       <div class="footer-brand">
-        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=100&auto=format&fit=crop" alt="Logo" class="footer-logo">
+        <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=100&auto=format&fit=crop" alt="Logo" class="footer-logo">
         <span>Education Technologies Corp.</span>
       </div>
       <div>&copy; Education Technologies Corp. All rights reserved.</div>
