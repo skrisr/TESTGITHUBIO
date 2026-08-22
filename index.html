@@ -1,377 +1,935 @@
-// ============================================================
-// Plague simulation core — SEIRD metapopulation model
-// S: Susceptible, E: Exposed(incubating), I: Infectious, R: Recovered/Immune, D: Dead
-// ============================================================
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PATHOGEN // 感染拡大シミュレーター</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-const TRAIT_DEFS = (function(){
-  const T = {};
-  function add(id, o){ o.id = id; T[id] = o; }
-
-  // ---------- TRANSMISSION ----------
-  add('T_AIR1',      {cat:'transmission', kind:'air',       name:'空気感染 I',       desc:'咳やくしゃみの飛沫で拡散する。都市部で効果的。', cost:2,  power:1.0, prereq:null});
-  add('T_AIR2',      {cat:'transmission', kind:'air',       name:'空気感染 II',      desc:'より微細な飛沫核として空気中に浮遊する。',       cost:7,  power:1.7, prereq:'T_AIR1'});
-  add('T_AIR3',      {cat:'transmission', kind:'air',       name:'空気感染 III',     desc:'エアロゾル化し、換気の悪い空間で爆発的に広がる。', cost:16, power:2.6, prereq:'T_AIR2'});
-  add('T_WATER1',    {cat:'transmission', kind:'water',     name:'水系感染 I',       desc:'汚染水を介して広がる。衛生環境の悪い地域で有効。', cost:2,  power:1.0, prereq:null});
-  add('T_WATER2',    {cat:'transmission', kind:'water',     name:'水系感染 II',      desc:'下水系統にも耐性を持ち浄水処理を一部すり抜ける。', cost:7,  power:1.7, prereq:'T_WATER1'});
-  add('T_WATER3',    {cat:'transmission', kind:'water',     name:'水系感染 III',     desc:'ほぼ全ての水源を汚染経路として利用できる。',       cost:16, power:2.6, prereq:'T_WATER2'});
-  add('T_BLOOD1',    {cat:'transmission', kind:'blood',     name:'血液感染 I',       desc:'注射針や輸血を介して感染する。',                 cost:3,  power:0.9, prereq:null});
-  add('T_BLOOD2',    {cat:'transmission', kind:'blood',     name:'血液感染 II',      desc:'わずかな体液接触でも感染するようになる。',         cost:9,  power:1.6, prereq:'T_BLOOD1'});
-  add('T_RODENT1',   {cat:'transmission', kind:'rodent',    name:'げっ歯類媒介 I',   desc:'ネズミを宿主として農村部で広がる。',              cost:3,  power:0.8, prereq:null});
-  add('T_RODENT2',   {cat:'transmission', kind:'rodent',    name:'げっ歯類媒介 II',  desc:'都市部のネズミ個体群にも適応する。',              cost:9,  power:1.5, prereq:'T_RODENT1'});
-  add('T_INSECT1',   {cat:'transmission', kind:'insect',    name:'昆虫媒介 I',       desc:'蚊などの吸血昆虫が媒介する。高温地域で有効。',     cost:3,  power:0.9, prereq:null});
-  add('T_INSECT2',   {cat:'transmission', kind:'insect',    name:'昆虫媒介 II',      desc:'複数種の昆虫を媒介者として利用できる。',           cost:9,  power:1.6, prereq:'T_INSECT1'});
-  add('T_LIVESTOCK1',{cat:'transmission', kind:'livestock', name:'家畜媒介 I',       desc:'家畜との接触で広がる。牧畜地域で有効。',           cost:3,  power:0.8, prereq:null});
-  add('T_LIVESTOCK2',{cat:'transmission', kind:'livestock', name:'家畜媒介 II',      desc:'畜産物の流通経路にも乗って拡散する。',             cost:9,  power:1.5, prereq:'T_LIVESTOCK1'});
-
-  // ---------- SYMPTOMS ----------
-  // mild
-  add('SY_NAUSEA',   {cat:'symptom', tier:1, name:'吐き気',       desc:'軽度の消化器症状。',                 cost:2, inf:0.3, sev:0.05, leth:0.01, prereq:null});
-  add('SY_COUGH',     {cat:'symptom', tier:1, name:'咳',          desc:'空気感染との相乗効果を持つ。',        cost:2, inf:0.5, sev:0.06, leth:0.01, prereq:null, synergy:'air'});
-  add('SY_SNEEZE',    {cat:'symptom', tier:1, name:'くしゃみ',    desc:'空気感染との相乗効果を持つ。',        cost:2, inf:0.5, sev:0.06, leth:0.01, prereq:null, synergy:'air'});
-  add('SY_RASH',      {cat:'symptom', tier:1, name:'発疹',        desc:'皮膚に軽い症状が現れる。',            cost:3, inf:0.2, sev:0.08, leth:0.02, prereq:null});
-  add('SY_DIARRHEA',  {cat:'symptom', tier:1, name:'下痢',        desc:'水系感染との相乗効果を持つ。',        cost:3, inf:0.4, sev:0.10, leth:0.03, prereq:null, synergy:'water'});
-  // mid
-  add('SY_FEVER',     {cat:'symptom', tier:2, name:'発熱',        desc:'免疫反応の高まりを示す。',            cost:6, inf:0.1, sev:0.10, leth:0.03, prereq:'SY_NAUSEA'});
-  add('SY_VOMIT',     {cat:'symptom', tier:2, name:'嘔吐',        desc:'吐き気が悪化した状態。',              cost:7, inf:0.2, sev:0.12, leth:0.04, prereq:'SY_NAUSEA'});
-  add('SY_LESION',    {cat:'symptom', tier:2, name:'皮膚病変',    desc:'発疹が進行し組織が損傷する。',        cost:8, inf:0.1, sev:0.15, leth:0.05, prereq:'SY_RASH'});
-  add('SY_PNEUMONIA', {cat:'symptom', tier:2, name:'肺炎',        desc:'呼吸器が重度に侵される。',            cost:9, inf:0.15,sev:0.18, leth:0.08, prereq:'SY_COUGH'});
-  add('SY_INSOMNIA',  {cat:'symptom', tier:2, name:'不眠症',      desc:'神経系への影響が現れ始める。',        cost:6, inf:0.05,sev:0.10, leth:0.03, prereq:null});
-  // severe
-  add('SY_SEIZURE',   {cat:'symptom', tier:3, name:'発作',        desc:'神経系が重度に損傷する。',            cost:15, inf:0.05, sev:0.20, leth:0.10, prereq:'SY_INSOMNIA'});
-  add('SY_NECROSIS',  {cat:'symptom', tier:3, name:'壊死',        desc:'組織が広範囲に壊死する。',            cost:16, inf:0.05, sev:0.25, leth:0.15, prereq:'SY_LESION'});
-  add('SY_HEMSHOCK',  {cat:'symptom', tier:3, name:'出血性ショック', desc:'血管系が破綻し出血が止まらない。', cost:18, inf:0.05, sev:0.30, leth:0.20, prereq:'SY_PNEUMONIA'});
-  add('SY_ORGANFAIL', {cat:'symptom', tier:3, name:'臓器不全',    desc:'複数の臓器が機能を停止し始める。',    cost:17, inf:0.0,  sev:0.30, leth:0.22, prereq:'SY_SEIZURE'});
-  // lethal
-  add('SY_COMA',      {cat:'symptom', tier:4, name:'昏睡',        desc:'意識が失われ回復が困難になる。',      cost:28, inf:0.0, sev:0.35, leth:0.30, prereq:'SY_HEMSHOCK'});
-  add('SY_TOTALFAIL', {cat:'symptom', tier:4, name:'全身性臓器不全', desc:'生命維持が不可能な状態に陥る。',  cost:32, inf:0.0, sev:0.40, leth:0.40, prereq:'SY_ORGANFAIL'});
-
-  // ---------- ABILITIES ----------
-  add('A_COLD1', {cat:'ability', name:'耐寒性 I', desc:'寒冷な気候での感染力低下を軽減する。', cost:4,  prereq:null, effect:{coldResist:0.5}});
-  add('A_COLD2', {cat:'ability', name:'耐寒性 II',desc:'寒冷な気候でも通常通り感染できる。',   cost:11, prereq:'A_COLD1', effect:{coldResist:1.0}});
-  add('A_HEAT1', {cat:'ability', name:'耐熱性 I', desc:'高温な気候での感染力低下を軽減する。', cost:4,  prereq:null, effect:{heatResist:0.5}});
-  add('A_HEAT2', {cat:'ability', name:'耐熱性 II',desc:'高温な気候でも通常通り感染できる。',   cost:11, prereq:'A_HEAT1', effect:{heatResist:1.0}});
-  add('A_DRUG1', {cat:'ability', name:'薬剤耐性 I',  desc:'治療薬の研究進行を15%遅らせる。', cost:5,  prereq:null,       effect:{drugResist:0.15}});
-  add('A_DRUG2', {cat:'ability', name:'薬剤耐性 II', desc:'治療薬の研究進行を30%遅らせる。', cost:13, prereq:'A_DRUG1', effect:{drugResist:0.30}});
-  add('A_DRUG3', {cat:'ability', name:'薬剤耐性 III',desc:'治療薬の研究進行を50%遅らせる。', cost:24, prereq:'A_DRUG2', effect:{drugResist:0.50}});
-  add('A_HARDEN1',{cat:'ability', name:'遺伝子強化 I',  desc:'各国の警戒度上昇を25%抑制する。', cost:6,  prereq:null,          effect:{stealth:0.25}});
-  add('A_HARDEN2',{cat:'ability', name:'遺伝子強化 II', desc:'各国の警戒度上昇を45%抑制する。', cost:16, prereq:'A_HARDEN1',   effect:{stealth:0.45}});
-
-  return T;
-})();
-
-// active (repeatable) ability, not part of tree unlock state
-const RESHUFFLE_COST_BASE = 20;
-
-function climateAffinity(kind, clim, dens, wealth){
-  switch(kind){
-    case 'air':       return 0.5 + 0.6*dens;
-    case 'water':     return 0.4 + 0.8*(1-wealth);
-    case 'blood':     return 0.55 + 0.35*(1-wealth);
-    case 'rodent':    return 0.45 + 0.55*(1-wealth);
-    case 'insect':    return 0.25 + 1.0*clim;
-    case 'livestock': return 0.5 + 0.5*(1-dens);
-    default: return 0.5;
-  }
+:root{
+  --bg:#080b0a;
+  --panel:#0f1512;
+  --panel-2:#131c17;
+  --line:#1f2e26;
+  --line-bright:#2c4536;
+  --ink:#d9e8e0;
+  --ink-dim:#7d9488;
+  --ink-faint:#4a5a51;
+  --path:#4fd1ae;
+  --path-glow:#8ff5d4;
+  --danger:#e2453c;
+  --danger-glow:#ff6b5e;
+  --amber:#e8b23d;
+  --font-head:'Oswald', sans-serif;
+  --font-body:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  height:100%;
+  overflow:hidden;
+}
+body{
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(79,209,174,0.06), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+}
+#app{
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  width:100vw;
 }
 
-function makeCountryState(c){
-  const pop = Math.round(c.pop * 1e6);
-  return {
-    id: c.id, name: c.name, pop, wealth: c.wealth, dens: c.dens, clim: c.clim,
-    S: pop, E: 0, I: 0, R: 0, D: 0,
-    awareness: 0, borderClosure: 0,
-    infectedEver: false,
-  };
+/* ---------- HEADER ---------- */
+header{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:10px 18px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, var(--panel), var(--bg));
+  flex-shrink:0;
+  flex-wrap:wrap;
+}
+.logo{
+  font-family:var(--font-head);
+  font-weight:700;
+  font-size:20px;
+  letter-spacing:3px;
+  color:var(--ink);
+  white-space:nowrap;
+}
+.logo b{color:var(--path); text-shadow:0 0 12px rgba(79,209,174,0.5);}
+.hud{display:flex; align-items:center; gap:16px; margin-left:auto; flex-wrap:wrap;}
+.hud-item{display:flex; flex-direction:column; align-items:flex-end; min-width:70px;}
+.hud-label{font-size:9px; letter-spacing:2px; color:var(--ink-faint); text-transform:uppercase;}
+.hud-value{font-size:16px; font-weight:600; color:var(--ink);}
+.hud-value.dna{color:var(--path);}
+.hud-value.cure{color:var(--amber);}
+.speed-controls{display:flex; gap:4px; align-items:center; border-left:1px solid var(--line); padding-left:16px;}
+.speed-btn{
+  background:var(--panel-2); border:1px solid var(--line); color:var(--ink-dim);
+  font-family:var(--font-body); font-size:11px; padding:6px 10px; cursor:pointer; border-radius:2px;
+  transition:all .15s;
+}
+.speed-btn:hover{border-color:var(--line-bright); color:var(--ink);}
+.speed-btn.active{background:rgba(79,209,174,0.15); border-color:var(--path); color:var(--path);}
+
+/* ---------- MAIN LAYOUT ---------- */
+main{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 320px;
+  overflow:hidden;
+  min-height:0;
+}
+.map-col{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  border-right:1px solid var(--line);
+}
+.map-wrap{
+  flex:1;
+  position:relative;
+  min-height:0;
+  background:radial-gradient(ellipse at 50% 45%, #0d1512 0%, #060807 75%);
+}
+#mapSvg{width:100%; height:100%; display:block;}
+.country{fill:#1a2620; stroke:#080b0a; stroke-width:.4; transition:fill .5s ease; cursor:default;}
+.country.selectable{cursor:crosshair;}
+.country.selectable:hover{fill:#2a3d33 !important; stroke:var(--path); stroke-width:1;}
+.blip{pointer-events:none;}
+.blip circle{animation:pulse 1.8s ease-in-out infinite;}
+@media (prefers-reduced-motion: reduce){ .blip circle{animation:none;} }
+@keyframes pulse{
+  0%{opacity:.85; transform:scale(0.9);}
+  50%{opacity:.25; transform:scale(1.6);}
+  100%{opacity:.85; transform:scale(0.9);}
+}
+.map-caption{
+  position:absolute; top:10px; left:14px; font-size:10px; letter-spacing:2px; color:var(--ink-faint);
+  text-transform:uppercase; pointer-events:none;
+}
+.origin-prompt{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:10px; pointer-events:none; background:rgba(6,8,7,0.35);
+}
+.origin-prompt span{
+  font-family:var(--font-head); font-size:22px; letter-spacing:2px; color:var(--path-glow);
+  text-shadow:0 0 16px rgba(79,209,174,0.6); background:rgba(8,11,10,0.75); padding:10px 22px; border:1px solid var(--line-bright);
 }
 
-function createGame(countryData, edges, opts){
-  opts = opts || {};
-  const countries = {};
-  let totalPop = 0;
-  countryData.forEach(row => {
-    const c = {id:row[0], name:row[1], pop:row[2], wealth:row[3], dens:row[4], clim:row[5]};
-    countries[c.id] = makeCountryState(c);
-    totalPop += countries[c.id].pop;
+/* ---------- STAT BARS / NEWS ---------- */
+.footer-panel{
+  border-top:1px solid var(--line);
+  background:var(--panel);
+  padding:10px 16px;
+  flex-shrink:0;
+}
+.stat-bars{display:flex; gap:14px; margin-bottom:8px;}
+.stat-block{flex:1;}
+.stat-top{display:flex; justify-content:space-between; font-size:10px; letter-spacing:1px; margin-bottom:3px; color:var(--ink-dim);}
+.stat-top b{font-size:12px; font-weight:600;}
+.bar-track{height:7px; background:#131c17; border:1px solid var(--line); border-radius:3px; overflow:hidden; display:flex;}
+.bar-fill{height:100%; transition:width .5s ease;}
+.bar-fill.healthy{background:linear-gradient(90deg,#3a5a4a,#4fd1ae);}
+.bar-fill.infected{background:linear-gradient(90deg,#c9962f,#e8b23d);}
+.bar-fill.dead{background:linear-gradient(90deg,#8f2a24,#e2453c);}
+.news-line{
+  font-size:11px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  border-top:1px dashed var(--line); padding-top:7px; display:flex; gap:8px; align-items:center;
+}
+.news-line .tag{color:var(--path); font-weight:600; flex-shrink:0;}
+.news-line.danger .tag{color:var(--danger);}
+.news-line.amber .tag{color:var(--amber);}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+  display:flex; flex-direction:column; background:var(--panel); min-height:0;
+}
+.tabs{display:flex; border-bottom:1px solid var(--line); flex-shrink:0;}
+.tab-btn{
+  flex:1; padding:10px 4px; text-align:center; font-family:var(--font-head); font-size:12px;
+  letter-spacing:1.5px; color:var(--ink-faint); background:none; border:none; cursor:pointer;
+  border-bottom:2px solid transparent; text-transform:uppercase;
+}
+.tab-btn.active{color:var(--path); border-bottom-color:var(--path);}
+.trait-scroll{flex:1; overflow-y:auto; padding:12px; min-height:0;}
+.trait-scroll::-webkit-scrollbar{width:6px;}
+.trait-scroll::-webkit-scrollbar-thumb{background:var(--line-bright); border-radius:3px;}
+.trait-tier-label{font-size:9px; letter-spacing:2px; color:var(--ink-faint); margin:12px 0 6px; text-transform:uppercase;}
+.trait-tier-label:first-child{margin-top:0;}
+.trait-node{
+  border:1px solid var(--line); background:var(--panel-2); border-radius:3px; padding:8px 10px; margin-bottom:6px;
+  cursor:pointer; transition:all .15s;
+}
+.trait-node:hover:not(.owned):not(.locked){border-color:var(--path); background:rgba(79,209,174,0.06);}
+.trait-node.owned{border-color:var(--path); background:rgba(79,209,174,0.1); cursor:default;}
+.trait-node.locked{opacity:.35; cursor:not-allowed;}
+.trait-top{display:flex; justify-content:space-between; align-items:center; gap:6px;}
+.trait-name{font-size:12.5px; font-weight:600; color:var(--ink);}
+.trait-node.owned .trait-name{color:var(--path);}
+.trait-cost{font-size:11px; color:var(--path); font-weight:600; flex-shrink:0;}
+.trait-node.owned .trait-cost{color:var(--ink-faint);}
+.trait-desc{font-size:10.5px; color:var(--ink-dim); margin-top:4px; line-height:1.4;}
+.trait-effects{display:flex; gap:6px; margin-top:5px; flex-wrap:wrap;}
+.eff{font-size:9px; padding:1px 6px; border-radius:8px; border:1px solid var(--line-bright); color:var(--ink-dim);}
+
+/* ---------- MODALS ---------- */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(4,5,5,0.88); display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:20px;
+}
+.modal-overlay.hidden{display:none;}
+.modal{
+  background:var(--panel); border:1px solid var(--line-bright); border-radius:6px; padding:30px 34px;
+  max-width:560px; width:100%; max-height:88vh; overflow-y:auto;
+  box-shadow:0 0 60px rgba(79,209,174,0.08);
+}
+.modal h1{
+  font-family:var(--font-head); font-size:28px; letter-spacing:3px; color:var(--ink);
+  text-align:center; margin-bottom:4px;
+}
+.modal h1 b{color:var(--path); text-shadow:0 0 20px rgba(79,209,174,0.5);}
+.modal .sub{text-align:center; color:var(--ink-faint); font-size:11px; letter-spacing:2px; margin-bottom:24px; text-transform:uppercase;}
+.field{margin-bottom:18px;}
+.field label{display:block; font-size:10px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; margin-bottom:8px;}
+.field input[type=text]{
+  width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--ink); padding:9px 10px;
+  font-family:var(--font-body); font-size:13px; border-radius:3px;
+}
+.field input[type=text]:focus{outline:none; border-color:var(--path);}
+.type-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.type-card{
+  border:1px solid var(--line); background:var(--panel-2); border-radius:4px; padding:10px 12px; cursor:pointer; transition:all .15s;
+}
+.type-card:hover{border-color:var(--line-bright);}
+.type-card.sel{border-color:var(--path); background:rgba(79,209,174,0.08);}
+.type-card .tname{font-family:var(--font-head); font-size:14px; letter-spacing:1px; color:var(--ink);}
+.type-card .tdesc{font-size:10px; color:var(--ink-dim); margin-top:3px; line-height:1.4;}
+.start-btn{
+  width:100%; margin-top:10px; background:linear-gradient(180deg, rgba(79,209,174,0.2), rgba(79,209,174,0.08));
+  border:1px solid var(--path); color:var(--path-glow); font-family:var(--font-head); font-size:16px; letter-spacing:3px;
+  padding:13px; border-radius:4px; cursor:pointer; text-transform:uppercase; transition:all .15s;
+}
+.start-btn:hover{background:rgba(79,209,174,0.3); box-shadow:0 0 20px rgba(79,209,174,0.25);}
+.start-btn:disabled{opacity:.4; cursor:not-allowed; box-shadow:none;}
+
+.end-result{font-family:var(--font-head); font-size:32px; text-align:center; letter-spacing:2px; margin-bottom:6px;}
+.end-result.win{color:var(--path-glow); text-shadow:0 0 20px rgba(79,209,174,0.6);}
+.end-result.lose{color:var(--danger-glow); text-shadow:0 0 20px rgba(226,69,60,0.6);}
+.end-sub{text-align:center; color:var(--ink-dim); font-size:12px; margin-bottom:22px; line-height:1.6;}
+.end-stats{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px;}
+.end-stat{background:var(--panel-2); border:1px solid var(--line); border-radius:4px; padding:12px; text-align:center;}
+.end-stat .v{font-size:20px; font-weight:700; color:var(--ink);}
+.end-stat .l{font-size:9px; letter-spacing:1px; color:var(--ink-faint); text-transform:uppercase; margin-top:3px;}
+
+@media (max-width:820px){
+  main{grid-template-columns:1fr;}
+  .sidebar{border-top:1px solid var(--line); max-height:38vh;}
+  .map-col{border-right:none;}
+  .hud{gap:10px;}
+  .hud-item{min-width:52px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">PATHO<b>GEN</b></div>
+    <div class="hud">
+      <div class="hud-item"><span class="hud-label">Day</span><span class="hud-value" id="hudDay">0</span></div>
+      <div class="hud-item"><span class="hud-label">DNA Points</span><span class="hud-value dna" id="hudDna">0</span></div>
+      <div class="hud-item"><span class="hud-label">Cure Research</span><span class="hud-value cure" id="hudCure">0%</span></div>
+      <div class="speed-controls">
+        <button class="speed-btn" id="btnPause">II</button>
+        <button class="speed-btn active" data-speed="1">1x</button>
+        <button class="speed-btn" data-speed="2">2x</button>
+        <button class="speed-btn" data-speed="4">4x</button>
+        <button class="speed-btn" data-speed="8">8x</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="map-col">
+      <div class="map-wrap">
+        <div class="map-caption">GLOBAL OUTBREAK MONITOR</div>
+        <svg id="mapSvg" viewBox="0 0 960 500" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="origin-prompt hidden" id="originPrompt"><span>感染源とする国を地図上でクリック</span></div>
+      </div>
+      <div class="footer-panel">
+        <div class="stat-bars">
+          <div class="stat-block">
+            <div class="stat-top"><span>健常者</span><b id="pctHealthy">100%</b></div>
+            <div class="bar-track"><div class="bar-fill healthy" id="barHealthy" style="width:100%"></div></div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-top"><span>感染者</span><b id="pctInfected">0%</b></div>
+            <div class="bar-track"><div class="bar-fill infected" id="barInfected" style="width:0%"></div></div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-top"><span>死者</span><b id="pctDead">0%</b></div>
+            <div class="bar-track"><div class="bar-fill dead" id="barDead" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="news-line" id="newsLine"><span class="tag">STANDBY</span><span>病原体の設定を待機中...</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="transmission">感染経路</button>
+        <button class="tab-btn" data-tab="symptom">症状</button>
+        <button class="tab-btn" data-tab="ability">能力</button>
+      </div>
+      <div class="trait-scroll" id="traitScroll"></div>
+    </div>
+  </main>
+
+</div>
+
+<!-- CONFIG MODAL -->
+<div class="modal-overlay" id="configModal">
+  <div class="modal">
+    <h1>PATHO<b>GEN</b></h1>
+    <div class="sub">病原体を設計し、人類の滅亡を目指せ</div>
+    <div class="field">
+      <label>病原体の名称</label>
+      <input type="text" id="pathogenName" placeholder="例: クリムゾン・フィーバー" maxlength="24">
+    </div>
+    <div class="field">
+      <label>病原体タイプ</label>
+      <div class="type-grid" id="typeGrid"></div>
+    </div>
+    <button class="start-btn" id="btnStart">病原体を発生させる</button>
+  </div>
+</div>
+
+<!-- END MODAL -->
+<div class="modal-overlay hidden" id="endModal">
+  <div class="modal">
+    <div class="end-result" id="endTitle">-</div>
+    <div class="end-sub" id="endSub">-</div>
+    <div class="end-stats">
+      <div class="end-stat"><div class="v" id="endDay">0</div><div class="l">経過日数</div></div>
+      <div class="end-stat"><div class="v" id="endDead">0</div><div class="l">総死者数</div></div>
+      <div class="end-stat"><div class="v" id="endInfected">0</div><div class="l">感染国数</div></div>
+      <div class="end-stat"><div class="v" id="endCure">0%</div><div class="l">治療薬完成度</div></div>
+    </div>
+    <button class="start-btn" id="btnRestart">再挑戦する</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js"></script>
+<script>
+(function(){
+
+/* =====================================================================
+   POPULATION / WEALTH DATA (millions, wealth 0-1) — keyed by ne_110m names
+===================================================================== */
+const POP_WEALTH = {
+"United States of America":[335,0.95],"Canada":[39,0.9],"Mexico":[128,0.5],
+"Brazil":[216,0.5],"Argentina":[46,0.5],"Chile":[19,0.62],"Peru":[34,0.4],
+"Colombia":[52,0.42],"Venezuela":[28,0.2],"Bolivia":[12,0.3],"Ecuador":[18,0.38],
+"Paraguay":[7,0.35],"Uruguay":[3.4,0.65],"Guyana":[0.8,0.35],"Suriname":[0.6,0.35],
+"United Kingdom":[68,0.88],"France":[68,0.87],"Germany":[84,0.9],"Spain":[47,0.75],
+"Italy":[59,0.78],"Portugal":[10.3,0.7],"Netherlands":[18,0.92],"Belgium":[11.7,0.85],
+"Switzerland":[8.8,1.0],"Austria":[9,0.88],"Ireland":[5.1,0.9],"Poland":[37,0.65],
+"Czech Rep.":[10.5,0.75],"Slovakia":[5.4,0.62],"Hungary":[9.7,0.58],"Romania":[19,0.5],
+"Bulgaria":[6.4,0.48],"Greece":[10.4,0.62],"Sweden":[10.5,0.92],"Norway":[5.4,1.0],
+"Finland":[5.5,0.9],"Denmark":[5.9,0.92],"Iceland":[0.38,0.92],"Ukraine":[36,0.32],
+"Belarus":[9.4,0.4],"Russia":[144,0.55],"Turkey":[85,0.5],"Croatia":[3.9,0.65],
+"Serbia":[6.8,0.45],"Bosnia and Herz.":[3.2,0.4],"Slovenia":[2.1,0.75],
+"North Macedonia":[2,0.42],"Albania":[2.8,0.4],"Lithuania":[2.8,0.65],
+"Latvia":[1.9,0.6],"Estonia":[1.3,0.72],"Moldova":[3.4,0.3],
+"Egypt":[112,0.3],"Libya":[6.9,0.3],"Tunisia":[12,0.4],"Algeria":[45,0.4],
+"Morocco":[37,0.35],"W. Sahara":[0.6,0.15],"Sudan":[48,0.12],"S. Sudan":[11,0.07],
+"Nigeria":[224,0.2],"Ethiopia":[126,0.12],"Kenya":[55,0.25],"Tanzania":[67,0.2],
+"Uganda":[48,0.15],"Ghana":[33,0.3],"Ivory Coast":[29,0.28],"Senegal":[18,0.25],
+"Mali":[23,0.13],"Niger":[27,0.1],"Chad":[18,0.08],"Cameroon":[28,0.2],
+"Central African Rep.":[5.5,0.07],"Dem. Rep. Congo":[102,0.08],"Congo":[6,0.2],
+"Gabon":[2.4,0.42],"Angola":[36,0.25],"Zambia":[20,0.2],"Zimbabwe":[16,0.15],
+"Mozambique":[33,0.1],"Madagascar":[29,0.12],"Malawi":[20,0.1],"Namibia":[2.6,0.35],
+"Botswana":[2.6,0.42],"South Africa":[60,0.45],"eSwatini":[1.2,0.25],"Lesotho":[2.3,0.2],
+"Somalia":[18,0.08],"Somaliland":[5.7,0.1],"Djibouti":[1.1,0.25],"Eritrea":[3.7,0.1],
+"Guinea":[14,0.14],"Guinea-Bissau":[2,0.15],"Sierra Leone":[8.6,0.15],"Liberia":[5.3,0.15],
+"Burkina Faso":[23,0.13],"Benin":[13,0.2],"Togo":[8.8,0.2],"Mauritania":[4.9,0.25],
+"Rwanda":[14,0.2],"Burundi":[13,0.08],"Eq. Guinea":[1.7,0.5],"Zambia2":[0,0],
+"Saudi Arabia":[36,0.75],"Yemen":[34,0.1],"Oman":[4.6,0.65],"United Arab Emirates":[9.4,1.0],
+"Qatar":[2.7,1.0],"Kuwait":[4.3,0.85],"Bahrain":[1.5,0.75],"Jordan":[11,0.35],
+"Lebanon":[5.5,0.3],"Syria":[23,0.15],"Iraq":[45,0.3],"Iran":[89,0.4],"Israel":[9.3,0.87],
+"Palestine":[5.2,0.2],"Afghanistan":[42,0.1],"Pakistan":[240,0.2],"India":[1428,0.32],
+"Nepal":[30,0.2],"Bhutan":[0.78,0.35],"Bangladesh":[173,0.25],"Sri Lanka":[22,0.35],
+"Myanmar":[54,0.2],"Thailand":[71,0.48],"Laos":[7.6,0.25],"Vietnam":[99,0.38],
+"Cambodia":[17,0.25],"Malaysia":[34,0.58],"Singapore":[5.9,1.0],"Indonesia":[278,0.35],
+"Philippines":[117,0.33],"Brunei":[0.45,0.75],"East Timor":[1.4,0.2],"Timor-Leste":[1.4,0.2],
+"China":[1412,0.55],"Mongolia":[3.4,0.35],"North Korea":[26,0.15],"S. Korea":[52,0.85],
+"Japan":[123,0.88],"Taiwan":[23.5,0.85],
+"Kazakhstan":[20,0.45],"Uzbekistan":[35,0.3],"Turkmenistan":[6.4,0.35],
+"Kyrgyzstan":[6.9,0.25],"Tajikistan":[10,0.2],"Azerbaijan":[10.2,0.42],
+"Armenia":[3,0.38],"Georgia":[3.7,0.4],
+"Australia":[26,0.95],"New Zealand":[5.2,0.9],"Papua New Guinea":[10.3,0.2],
+"Fiji":[0.93,0.4],"Solomon Is.":[0.74,0.2],"Vanuatu":[0.32,0.25],"New Caledonia":[0.27,0.6],
+"Cuba":[11,0.25],"Haiti":[11.6,0.1],"Dominican Rep.":[11.3,0.42],"Jamaica":[2.8,0.4],
+"Trinidad and Tobago":[1.5,0.55],"Belize":[0.4,0.35],"Guatemala":[18,0.3],
+"Honduras":[10,0.25],"El Salvador":[6.3,0.3],"Nicaragua":[6.9,0.25],"Costa Rica":[5.2,0.6],
+"Panama":[4.4,0.55],"Greenland":[0.06,0.7],"Puerto Rico":[3.2,0.55],
+"Falkland Is.":[0.003,0.6],"French Guiana":[0.3,0.6],"N. Cyprus":[0.33,0.5],"Cyprus":[1.2,0.72],
+"Kosovo":[1.8,0.35]
+};
+const DEFAULT_POP = 6, DEFAULT_WEALTH = 0.28;
+function popWealth(name){
+  if(POP_WEALTH[name]) return POP_WEALTH[name];
+  return [DEFAULT_POP, DEFAULT_WEALTH];
+}
+
+/* =====================================================================
+   PATHOGEN TYPES
+===================================================================== */
+const PATHOGEN_TYPES = [
+ {id:"virus", name:"ウイルス", desc:"高い感染力。突然変異しやすくDNA獲得が早い。", startDna:10,
+   base:{infectivity:1.25, severity:0.75, lethality:0.55, cureResistance:0}, dnaMult:1.15, costMult:{transmission:0.85}},
+ {id:"bacteria", name:"細菌", desc:"全能力が平均的。扱いやすい万能型。", startDna:14,
+   base:{infectivity:1.0, severity:1.0, lethality:1.0, cureResistance:0.3}, dnaMult:1.0, costMult:{symptom:0.85}},
+ {id:"fungus", name:"真菌", desc:"拡散は遅いが治療薬への耐性が非常に高い。", startDna:16,
+   base:{infectivity:0.6, severity:0.9, lethality:1.3, cureResistance:2.2}, dnaMult:0.9, costMult:{}},
+ {id:"parasite", name:"寄生虫", desc:"環境への耐性が高く検疫を突破しやすい。", startDna:12,
+   base:{infectivity:0.75, severity:0.6, lethality:0.5, cureResistance:0.6}, dnaMult:1.0, costMult:{ability:0.8}, quarantineResistStart:0.15},
+ {id:"bioweapon", name:"生物兵器", desc:"初期から強力だが目立ちやすく発見が早い。", startDna:26,
+   base:{infectivity:1.1, severity:1.6, lethality:1.8, cureResistance:-0.4}, dnaMult:0.95, costMult:{}, detectStart:2},
+ {id:"nanovirus", name:"ナノウイルス", desc:"DNA獲得速度が非常に速いが治療薬に弱い。", startDna:10,
+   base:{infectivity:1.35, severity:1.0, lethality:0.8, cureResistance:-1.2}, dnaMult:1.4, costMult:{}},
+];
+
+/* =====================================================================
+   TRAIT TREE
+===================================================================== */
+const TRAITS = [
+ // --- transmission ---
+ {id:"air1",cat:"transmission",tier:1,name:"空気感染 I",cost:6,req:null,desc:"咳やくしゃみで空気中に飛散し感染する。",fx:{infectivity:2}},
+ {id:"air2",cat:"transmission",tier:2,name:"空気感染 II",cost:12,req:"air1",desc:"より微細な飛沫となり感染範囲が拡大。",fx:{infectivity:2.5}},
+ {id:"air3",cat:"transmission",tier:3,name:"空気感染 III",cost:22,req:"air2",desc:"エアロゾル化し、換気の悪い空間で猛威を振るう。",fx:{infectivity:3.5}},
+ {id:"water1",cat:"transmission",tier:1,name:"水系感染 I",cost:6,req:null,desc:"汚染水を介して感染が広がる。",fx:{infectivity:1.8}},
+ {id:"water2",cat:"transmission",tier:2,name:"水系感染 II",cost:12,req:"water1",desc:"上水道インフラを汚染し拡散力が増す。",fx:{infectivity:2.2}},
+ {id:"water3",cat:"transmission",tier:3,name:"水系感染 III",cost:22,req:"water2",desc:"海洋や河川全体に病原体が拡散する。",fx:{infectivity:3}},
+ {id:"insect1",cat:"transmission",tier:1,name:"昆虫媒介 I",cost:9,req:null,desc:"蚊やダニなどの昆虫を媒介に感染する。",fx:{infectivity:2}},
+ {id:"insect2",cat:"transmission",tier:2,name:"昆虫媒介 II",cost:16,req:"insect1",desc:"複数の昆虫種に適応し媒介効率が上昇。",fx:{infectivity:2.5}},
+ {id:"rodent1",cat:"transmission",tier:1,name:"げっ歯類媒介",cost:9,req:null,desc:"ネズミなどを介し都市部で急速に拡散。",fx:{infectivity:2.2}},
+ {id:"livestock1",cat:"transmission",tier:1,name:"家畜媒介",cost:9,req:null,desc:"家畜経由で農村部の感染源となる。",fx:{infectivity:1.8}},
+ {id:"blood1",cat:"transmission",tier:1,name:"血液感染",cost:7,req:null,desc:"輸血や注射器の使い回しにより感染。",fx:{infectivity:1.2}},
+
+ // --- symptom tier1 ---
+ {id:"cough",cat:"symptom",tier:1,name:"咳",cost:5,req:null,desc:"軽度の咳。飛沫感染の助けとなる。",fx:{infectivity:1,severity:1,detect:1}},
+ {id:"fever",cat:"symptom",tier:1,name:"発熱",cost:5,req:null,desc:"体温上昇。基本的な症状。",fx:{severity:1,lethality:0.3,detect:1}},
+ {id:"sneeze",cat:"symptom",tier:1,name:"くしゃみ",cost:5,req:null,desc:"飛沫を大量に放出し感染を助長する。",fx:{infectivity:2,detect:1}},
+ {id:"rash",cat:"symptom",tier:1,name:"発疹",cost:5,req:null,desc:"皮膚に発疹が現れ、発見されやすくなる。",fx:{severity:1,detect:2}},
+ {id:"nausea",cat:"symptom",tier:1,name:"吐き気",cost:5,req:null,desc:"消化器系への軽度の影響。",fx:{severity:1,lethality:0.5,detect:1}},
+ // tier2 (needs 2 of tier1)
+ {id:"pneumonia",cat:"symptom",tier:2,name:"肺炎",cost:12,req:"tier1:2",desc:"呼吸器が侵され重症化リスクが上昇。",fx:{severity:2,lethality:2,detect:2}},
+ {id:"diarrhea",cat:"symptom",tier:2,name:"下痢",cost:10,req:"tier1:2",desc:"脱水症状を引き起こし致死率に影響。",fx:{severity:1,lethality:1,detect:1}},
+ {id:"seizures",cat:"symptom",tier:2,name:"痙攣発作",cost:13,req:"tier1:2",desc:"神経系への影響が現れ始める。",fx:{severity:2,lethality:1,detect:3}},
+ {id:"lesions",cat:"symptom",tier:2,name:"皮膚病変",cost:12,req:"tier1:2",desc:"目に見える病変により警戒度が上がる。",fx:{severity:2,detect:2}},
+ // tier3 (needs 2 of tier2)
+ {id:"hemorrhagic",cat:"symptom",tier:3,name:"出血熱",cost:24,req:"tier2:2",desc:"内出血を伴う重篤な症状。致死率が急上昇。",fx:{severity:3,lethality:4,detect:4}},
+ {id:"organfail",cat:"symptom",tier:3,name:"臓器不全",cost:24,req:"tier2:2",desc:"主要臓器の機能が損なわれる。",fx:{severity:3,lethality:3.5,detect:3}},
+ {id:"coma",cat:"symptom",tier:3,name:"昏睡",cost:22,req:"tier2:2",desc:"意識を失い、社会的機能が完全停止する。",fx:{severity:3,lethality:2.5,detect:2}},
+ // tier4
+ {id:"totalfail",cat:"symptom",tier:4,name:"全身機能不全",cost:36,req:"tier3:1",desc:"複数臓器が同時に機能停止。致死率が極限まで上昇。",fx:{severity:4,lethality:7,detect:5}},
+
+ // --- ability ---
+ {id:"drugres",cat:"ability",tier:1,name:"薬剤耐性",cost:15,req:null,desc:"既存の薬剤治療への耐性を獲得する。",fx:{cureResistance:2}},
+ {id:"climateres",cat:"ability",tier:1,name:"極限環境耐性",cost:12,req:null,desc:"検疫や気候変化への耐性が向上する。",fx:{quarantineResist:0.12}},
+ {id:"immuneescape",cat:"ability",tier:2,name:"免疫回避",cost:20,req:null,desc:"宿主の免疫システムを回避する能力。",fx:{cureResistance:3}},
+ {id:"mutation",cat:"ability",tier:1,name:"突然変異促進",cost:18,req:null,desc:"変異速度が向上しDNAポイント獲得が増加する。",fx:{dnaGainMult:0.25}},
+ {id:"asymptomatic",cat:"ability",tier:2,name:"無症状キャリア",cost:16,req:null,desc:"症状を隠しながら感染を広げることができる。",fx:{detect:-3,infectivity:1}},
+ {id:"genetichard",cat:"ability",tier:2,name:"遺伝子強化",cost:28,req:null,desc:"病原体の遺伝子構造を強化し治療薬開発を大幅に遅延させる。",fx:{cureResistance:4}},
+ {id:"hyperevo",cat:"ability",tier:3,name:"超進化",cost:34,req:null,desc:"あらゆる面で病原体を飛躍的に進化させる。",fx:{infectivity:2,cureResistance:2,dnaGainMult:0.15}},
+];
+
+/* =====================================================================
+   STATE
+===================================================================== */
+let state = {
+  phase:"config", // config -> selectOrigin -> playing -> ended
+  day:0, dna:0, speed:1, paused:false,
+  typeId:"virus", pathogenName:"",
+  owned:{}, // id -> true
+  stats:{infectivity:1, severity:1, lethality:0.5, cureResistance:0, detect:0, quarantineResist:0, dnaGainMult:1},
+  cureProgress:0, cureThreshold:100, cureFound:false,
+  countries:[], links:[], hubIdx:[],
+  totalPop:0,
+};
+
+/* =====================================================================
+   UI: TYPE GRID
+===================================================================== */
+const typeGrid = document.getElementById("typeGrid");
+PATHOGEN_TYPES.forEach((t,i)=>{
+  const el = document.createElement("div");
+  el.className = "type-card" + (i===0?" sel":"");
+  el.dataset.id = t.id;
+  el.innerHTML = `<div class="tname">${t.name}</div><div class="tdesc">${t.desc}</div>`;
+  el.addEventListener("click", ()=>{
+    document.querySelectorAll(".type-card").forEach(c=>c.classList.remove("sel"));
+    el.classList.add("sel");
+    state.typeId = t.id;
   });
-  const game = {
-    day: 0,
-    dna: 6,
-    cure: 0,
-    diseaseType: opts.diseaseType || 'virus',
-    diseaseName: opts.diseaseName || 'X-Strain',
-    traits: new Set(),
-    countries,
-    edges: edges || [],
-    totalPop,
-    globalPanic: 0,
-    log: [],
-    over: false,
-    result: null,
-    reshuffleCount: 0,
-  };
-  return game;
-}
+  typeGrid.appendChild(el);
+});
 
-function typeModifiers(type){
-  switch(type){
-    case 'bacteria': return {transCost:0.85, symCost:1.0, drugCostMul:0.8, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0};
-    case 'virus':     return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0, mutation:true};
-    case 'fungus':    return {transCost:1.15,symCost:0.85,drugCostMul:1.0, betaMul:0.85,cureMul:0.85,startPanic:0, lethMul:1.0};
-    case 'parasite':  return {transCost:1.2, symCost:0.8, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:0.8, stealthMul:0.8};
-    case 'prion':     return {transCost:1.6, symCost:0.8, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.3};
-    case 'bioweapon': return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0.15, lethMul:1.1, preloaded:['T_AIR1','T_WATER1']};
-    default: return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0};
+document.getElementById("btnStart").addEventListener("click", ()=>{
+  const nameInput = document.getElementById("pathogenName").value.trim();
+  state.pathogenName = nameInput || "不明な病原体";
+  const type = PATHOGEN_TYPES.find(t=>t.id===state.typeId);
+  state.dna = type.startDna;
+  state.stats = Object.assign({infectivity:1, severity:1, lethality:0.5, cureResistance:0, detect:0, quarantineResist:0, dnaGainMult:1}, type.base);
+  state.stats.quarantineResist = type.quarantineResistStart || 0;
+  state.stats.detect = type.detectStart || 0;
+  state.typeObj = type;
+  document.getElementById("configModal").classList.add("hidden");
+  state.phase = "selectOrigin";
+  document.getElementById("originPrompt").classList.remove("hidden");
+  document.querySelectorAll(".country").forEach(p=>p.classList.add("selectable"));
+  addNews("SETUP", `${state.pathogenName} (${type.name}) が設計されました。発生国を選択してください。`, "amber");
+  renderTraitTab();
+});
+
+/* =====================================================================
+   MAP LOADING
+===================================================================== */
+const svg = d3.select("#mapSvg");
+const gCountries = svg.append("g").attr("class","g-countries");
+const gBlips = svg.append("g").attr("class","g-blips");
+const projection = d3.geoNaturalEarth1();
+const path = d3.geoPath(projection);
+
+d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(topology=>{
+  const objName = topology.objects.countries ? "countries" : Object.keys(topology.objects)[0];
+  const geometries = topology.objects[objName].geometries;
+  const fc = topojson.feature(topology, topology.objects[objName]);
+  projection.fitSize([960,500], fc);
+
+  const neighborIdx = topojson.neighbors(geometries);
+
+  state.countries = fc.features.map((feature, i)=>{
+    const name = (feature.properties && (feature.properties.name || feature.properties.NAME)) || ("Region "+i);
+    const [pop, wealth] = popWealth(name);
+    let centroid = [0,0];
+    try{ centroid = projection(d3.geoCentroid(feature)); }catch(e){}
+    if(!centroid || isNaN(centroid[0])) centroid=[480,250];
+    return {
+      idx:i, name, feature, population: pop, wealth,
+      healthy: pop, infected:0, dead:0, immune:0,
+      awareness:0, quarantine:0, detected:false,
+      centroid, neighbors: neighborIdx[i] || []
+    };
+  });
+  state.totalPop = state.countries.reduce((s,c)=>s+c.population,0);
+
+  // build air-hub network: top 26 by population*wealth
+  const ranked = [...state.countries].sort((a,b)=> (b.population*(0.4+b.wealth)) - (a.population*(0.4+a.wealth)));
+  state.hubIdx = ranked.slice(0,26).map(c=>c.idx);
+
+  // render paths
+  gCountries.selectAll("path.country")
+    .data(state.countries)
+    .join("path")
+    .attr("class","country")
+    .attr("d", d=>path(d.feature))
+    .attr("data-idx", d=>d.idx)
+    .on("click", (ev,d)=> onCountryClick(d));
+
+  // blip layer placeholders
+  gBlips.selectAll("g.blip")
+    .data(state.countries)
+    .join("g")
+    .attr("class","blip")
+    .attr("transform", d=>`translate(${d.centroid[0]},${d.centroid[1]})`)
+    .append("circle")
+    .attr("r",0)
+    .attr("fill", "var(--danger)");
+
+}).catch(err=>{
+  addNews("ERROR","地図データの取得に失敗しました。ネットワーク設定を確認してください。","danger");
+  console.error(err);
+});
+
+function onCountryClick(d){
+  if(state.phase === "selectOrigin"){
+    startInfection(d);
   }
 }
 
-function traitCost(game, def){
-  const mod = typeModifiers(game.diseaseType);
-  let cost = def.cost;
-  if (def.cat === 'transmission') cost *= mod.transCost;
-  if (def.cat === 'symptom') cost *= mod.symCost;
-  if (def.id.startsWith('A_DRUG')) cost *= (mod.drugCostMul||1);
-  return Math.round(cost*10)/10;
+function startInfection(country){
+  state.phase = "playing";
+  document.getElementById("originPrompt").classList.add("hidden");
+  document.querySelectorAll(".country").forEach(p=>p.classList.remove("selectable"));
+  const seed = Math.max(3, Math.round(country.population*0.00005*1000));
+  country.infected = Math.min(country.population, seed/1000 + 0.002);
+  country.healthy -= country.infected;
+  addNews("OUTBREAK", `${country.name} で患者ゼロが確認されました。`, "danger");
+  recomputeStats();
 }
 
-function canBuy(game, id){
-  const def = TRAIT_DEFS[id];
-  if (!def) return false;
-  if (game.traits.has(id)) return false;
-  if (def.prereq && !game.traits.has(def.prereq)) return false;
-  return game.dna >= traitCost(game, def);
+/* =====================================================================
+   TRAIT PURCHASE / STATS
+===================================================================== */
+function ownedCountByTier(cat, tier){
+  return TRAITS.filter(t=>t.cat===cat && t.tier===tier && state.owned[t.id]).length;
 }
-
-function buyTrait(game, id){
-  if (!canBuy(game, id)) return false;
-  const def = TRAIT_DEFS[id];
-  game.dna -= traitCost(game, def);
-  game.traits.add(id);
-  game.log.push({day: game.day, type:'evolve', text:`「${def.name}」を獲得した。`});
-  return true;
+function traitLocked(t){
+  if(!t.req) return false;
+  if(t.req.startsWith("tier")){
+    const [,tierN, need] = t.req.match(/tier(\d):(\d)/) ? [null, t.req.match(/tier(\d):(\d)/)[1], t.req.match(/tier(\d):(\d)/)[2]] : [null,0,0];
+    return ownedCountByTier(t.cat, parseInt(tierN)) < parseInt(need);
+  }
+  return !state.owned[t.req];
 }
-
-function useReshuffle(game){
-  const cost = RESHUFFLE_COST_BASE + game.reshuffleCount*10;
-  if (game.dna < cost || game.cure <= 0) return false;
-  game.dna -= cost;
-  game.reshuffleCount++;
-  game.cure = Math.max(0, game.cure - 22);
-  game.log.push({day: game.day, type:'reshuffle', text:'遺伝子再構成を実行。治療薬の研究が後退した。'});
-  return true;
+function traitCostFor(t){
+  const mult = (state.typeObj && state.typeObj.costMult && state.typeObj.costMult[t.cat]) || 1;
+  return Math.round(t.cost * mult);
 }
-
-function aggregateTraitEffects(game){
-  const mod = typeModifiers(game.diseaseType);
-  const trans = {air:0,water:0,blood:0,rodent:0,insect:0,livestock:0};
-  const synergy = {air:0,water:0,blood:0,rodent:0,insect:0,livestock:0};
-  let infectivity = 0, severity = 0, lethality = 0;
-  let coldResist = 0, heatResist = 0, drugResist = 0, stealth = 0;
-  const owned = new Set(game.traits);
-  if (mod.preloaded) mod.preloaded.forEach(t=>owned.add(t));
-
-  owned.forEach(id=>{
-    const def = TRAIT_DEFS[id];
-    if (!def) return;
-    if (def.cat === 'transmission') trans[def.kind] += def.power;
-    else if (def.cat === 'symptom') {
-      infectivity += def.inf; severity += def.sev; lethality += def.leth;
-      if (def.synergy) synergy[def.synergy] += def.inf*0.8;
-    }
-    else if (def.cat === 'ability') {
-      if (def.effect.coldResist) coldResist = Math.max(coldResist, def.effect.coldResist);
-      if (def.effect.heatResist) heatResist = Math.max(heatResist, def.effect.heatResist);
-      if (def.effect.drugResist) drugResist = Math.max(drugResist, def.effect.drugResist);
-      if (def.effect.stealth) stealth = Math.max(stealth, def.effect.stealth);
+function buyTrait(id){
+  const t = TRAITS.find(x=>x.id===id);
+  if(!t || state.owned[id] || traitLocked(t)) return;
+  const cost = traitCostFor(t);
+  if(state.dna < cost) return;
+  state.dna -= cost;
+  state.owned[id] = true;
+  recomputeStats();
+  addNews("EVOLVE", `新形質「${t.name}」を獲得しました。`, "amber");
+  renderTraitTab();
+  updateHud();
+}
+function recomputeStats(){
+  const type = state.typeObj;
+  const base = Object.assign({infectivity:1, severity:1, lethality:0.5, cureResistance:0, detect:0, quarantineResist:0, dnaGainMult:1}, type ? type.base : {});
+  const s = {infectivity:base.infectivity, severity:base.severity, lethality:base.lethality, cureResistance:base.cureResistance,
+             detect: type ? (type.detectStart||0) : 0, quarantineResist: type ? (type.quarantineResistStart||0) : 0, dnaGainMult:1};
+  TRAITS.forEach(t=>{
+    if(state.owned[t.id]){
+      for(const k in t.fx) s[k] = (s[k]||0) + t.fx[k];
     }
   });
-  lethality *= mod.lethMul;
-  if (mod.stealthMul) stealth = 1-((1-stealth)*mod.stealthMul);
-  return {trans, synergy, infectivity, severity, lethality, coldResist, heatResist, drugResist, stealth};
+  s.dnaGainMult += (type ? (type.dnaMult-1) : 0);
+  s.lethality = Math.max(0.05, s.lethality);
+  s.infectivity = Math.max(0.1, s.infectivity);
+  s.cureResistance = Math.max(-3, s.cureResistance);
+  state.stats = s;
+  state.cureThreshold = 100 + Math.max(0, s.cureResistance)*38 - Math.min(0,s.cureResistance)*10;
 }
 
-const GAMMA_BASE = 1/11;
-
-function computeR0(country, eff){
-  let score = 0;
-  for (const kind in eff.trans){
-    const p = eff.trans[kind];
-    if (p<=0) continue;
-    let power = p;
-    // symptom-transmission synergy: coughing/sneezing boost air, diarrhea boosts water, etc.
-    power += eff.synergy[kind] || 0;
-    score += power * climateAffinity(kind, country.clim, country.dens, country.wealth);
-  }
-  let r0 = 0.35 + score*1.3 + eff.infectivity*0.55;
-  return r0;
-}
-
-function computeBeta(country, eff, mod){
-  let r0 = computeR0(country, eff) * mod.betaMul;
-  let beta = r0 * GAMMA_BASE;
-  beta *= (0.75 + 0.5*country.dens);
-  // climate penalties without resistance
-  if (country.clim < 0.3){
-    const penalty = (0.3-country.clim)/0.3; // 0..1
-    beta *= (1 - penalty*0.5*(1-eff.coldResist));
-  }
-  if (country.clim > 0.7){
-    const penalty = (country.clim-0.7)/0.3;
-    beta *= (1 - penalty*0.35*(1-eff.heatResist));
-  }
-  // healthcare/awareness mitigation (lockdowns, quarantine, hygiene campaigns)
-  const mitigationStrength = Math.min(0.8, 0.28 + 0.4*country.wealth);
-  beta *= (1 - country.awareness*mitigationStrength);
-  return Math.max(0, beta);
-}
-
-const INCUBATION_DAYS = 4;
-const INFECTIOUS_DAYS = 11;
-
-function stepDay(game){
-  if (game.over) return;
-  game.day++;
-  const eff = aggregateTraitEffects(game);
-  const mod = typeModifiers(game.diseaseType);
-  const sigma = 1/INCUBATION_DAYS;
-  const gammaBase = 1/INFECTIOUS_DAYS;
-  const cureFrac = game.cure/100;
-
-  let worldI = 0, worldE = 0, worldD = 0, worldInfectedCountries = 0, worldAlive = 0;
-
-  // snapshot for migration pass
-  const snapshot = {};
-  for (const id in game.countries){
-    const c = game.countries[id];
-    snapshot[id] = {E:c.E, I:c.I, N:c.pop, borderClosure:c.borderClosure};
-  }
-
-  for (const id in game.countries){
-    const c = game.countries[id];
-    const beta = computeBeta(c, eff, mod);
-
-    const N = c.pop;
-    const newExposed = Math.min(c.S, beta * c.S * c.I / N);
-    const newInfectious = Math.min(c.E, sigma * c.E);
-    const gammaEff = gammaBase * (1 + cureFrac*2.5);
-    const resolving = Math.min(c.I, gammaEff * c.I);
-
-    let cfrBase = Math.min(0.95, eff.lethality);
-    let cfrEff = cfrBase * (1 - c.wealth*0.45);
-    cfrEff *= (1 - cureFrac*0.95);
-    cfrEff = Math.max(0, cfrEff);
-
-    const newDead = resolving * cfrEff;
-    const newRecovered = resolving - newDead;
-
-    c.S -= newExposed;
-    c.E += newExposed - newInfectious;
-    c.I += newInfectious - resolving;
-    c.R += newRecovered;
-    c.D += newDead;
-
-    // clamp tiny negatives from float error
-    if (c.S<0) c.S=0; if (c.E<0) c.E=0; if (c.I<0) c.I=0;
-
-    if (!c.infectedEver && (c.E+c.I) > 0.5){
-      c.infectedEver = true;
-      const bonus = 5 + c.wealth*10;
-      game.dna += bonus;
-      game.log.push({day: game.day, type:'outbreak', text:`${c.name} で感染者が確認された。(+${bonus.toFixed(1)} DNA)`, countryId:c.id});
+/* =====================================================================
+   TRAIT TAB RENDERING
+===================================================================== */
+let currentTab = "transmission";
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentTab = btn.dataset.tab;
+    renderTraitTab();
+  });
+});
+const EFF_LABEL = {infectivity:"感染力",severity:"重症度",lethality:"致死率",cureResistance:"耐薬性",detect:"発見度",quarantineResist:"検疫耐性",dnaGainMult:"DNA獲得"};
+function renderTraitTab(){
+  const wrap = document.getElementById("traitScroll");
+  wrap.innerHTML = "";
+  const list = TRAITS.filter(t=>t.cat===currentTab).sort((a,b)=>a.tier-b.tier || a.cost-b.cost);
+  let lastTier = null;
+  list.forEach(t=>{
+    if(t.tier !== lastTier){
+      const lbl = document.createElement("div");
+      lbl.className = "trait-tier-label";
+      lbl.textContent = "TIER " + t.tier;
+      wrap.appendChild(lbl);
+      lastTier = t.tier;
     }
+    const owned = !!state.owned[t.id];
+    const locked = !owned && traitLocked(t);
+    const cost = traitCostFor(t);
+    const node = document.createElement("div");
+    node.className = "trait-node" + (owned?" owned":"") + (locked?" locked":"");
+    const effHtml = Object.keys(t.fx).map(k=>`<span class="eff">${EFF_LABEL[k]||k} ${t.fx[k]>0?"+":""}${t.fx[k]}</span>`).join("");
+    node.innerHTML = `<div class="trait-top"><span class="trait-name">${t.name}</span><span class="trait-cost">${owned?"習得済":cost+" DNA"}</span></div>
+      <div class="trait-desc">${t.desc}</div><div class="trait-effects">${effHtml}</div>`;
+    if(!owned && !locked){
+      node.addEventListener("click", ()=>buyTrait(t.id));
+    }
+    wrap.appendChild(node);
+  });
+}
 
-    // awareness
-    const stealthMul = (1-eff.stealth);
-    const awarenessTarget = Math.min(1, ((c.D/N)*450 + (c.I/N)*9 + game.globalPanic*0.35) * stealthMul);
-    c.awareness += (awarenessTarget - c.awareness)*0.15;
-    if (c.awareness<0) c.awareness=0;
+/* =====================================================================
+   NEWS TICKER
+===================================================================== */
+const newsQueue = [];
+function addNews(tag, text, cls){
+  newsQueue.unshift({tag,text,cls});
+  if(newsQueue.length>40) newsQueue.pop();
+  renderNews();
+}
+let newsIdx = 0;
+function renderNews(){
+  if(newsQueue.length===0) return;
+  const item = newsQueue[0];
+  const el = document.getElementById("newsLine");
+  el.className = "news-line" + (item.cls?" "+item.cls:"");
+  el.innerHTML = `<span class="tag">${item.tag}</span><span>${item.text}</span>`;
+}
 
-    // border closure
-    const closureThreshold = 0.45 - 0.15*c.wealth;
-    const closureTarget = c.awareness > closureThreshold ? Math.min(0.95, 0.3+0.6*c.wealth) : Math.max(0, c.borderClosure-0.05);
-    c.borderClosure += (closureTarget - c.borderClosure)*0.2;
+/* =====================================================================
+   SIMULATION TICK
+===================================================================== */
+function tick(){
+  const s = state.stats;
+  let globalInfectedCountries = 0;
+  let researchGain = 0;
 
-    if (c.I>0 || c.E>0) worldInfectedCountries++;
-    worldI += c.I; worldE += c.E; worldD += c.D;
-    worldAlive += (N - c.D);
-  }
+  state.countries.forEach(c=>{
+    if(c.population<=0) return;
+    if(c.infected<=0.0001 && !c.detected){ return; }
 
-  // migration / seeding pass (uses snapshot to avoid order bias)
-  const totalCountries = Object.keys(game.countries).length;
-  game.globalPanic = Math.min(1, worldInfectedCountries/totalCountries*0.55 + (worldD/game.totalPop)*25);
+    const infFrac = c.infected / c.population;
 
-  game.edges.forEach(e=>{
-    const a = game.countries[e.a], b = game.countries[e.b];
-    if (!a || !b) return;
-    const w = e.w;
-    tryIntroduce(a, b, snapshot[e.a], w, game);
-    tryIntroduce(b, a, snapshot[e.b], w, game);
+    // local spread
+    if(c.infected>0){
+      const forceOfInfection = 1 - Math.exp(-(s.infectivity*0.09) * infFrac);
+      const quarantineEffect = Math.max(0, c.quarantine*(1-s.quarantineResist));
+      let newly = c.healthy * forceOfInfection * (1-quarantineEffect*0.85);
+      newly = Math.min(newly, c.healthy);
+      if(newly>0){
+        c.healthy -= newly;
+        c.infected += newly;
+      }
+
+      // deaths
+      const healthcareMitigation = c.wealth*0.55;
+      let deaths = c.infected * (s.lethality*0.0016) * (1-healthcareMitigation);
+      deaths = Math.min(deaths, c.infected);
+      c.infected -= deaths;
+      c.dead += deaths;
+
+      // cure recoveries
+      if(state.cureFound){
+        let rec = c.infected * 0.045;
+        rec = Math.min(rec, c.infected);
+        c.infected -= rec;
+        c.immune += rec;
+      }
+
+      // awareness
+      c.awareness = Math.min(1, c.awareness + (s.severity*0.0022 + infFrac*0.012) * Math.max(0.15, (1-Math.max(0,-s.detect)*0.05)) + Math.max(0,s.detect)*0.0009);
+      if(!c.detected && c.awareness>0.18){
+        c.detected = true;
+        addNews("警戒", `${c.name} で感染爆発が確認され、警戒レベルが引き上げられました。`, "danger");
+      }
+      if(c.awareness>0.35){
+        c.quarantine = Math.min(1, c.quarantine + 0.018);
+      }
+      if(c.detected){
+        researchGain += c.wealth * Math.log(1+c.population) * 0.052;
+        globalInfectedCountries++;
+      }
+    }
   });
 
-  // DNA trickle
-  game.dna += 0.12 * worldInfectedCountries;
+  // cross-country spread
+  if(!state.cureFound){
+    state.countries.forEach(c=>{
+      if(c.infected<=0) return;
+      const infFrac = c.infected/c.population;
+      const outQ = Math.max(0, c.quarantine*(1-s.quarantineResist));
+      // land neighbors
+      c.neighbors.forEach(ni=>{
+        const b = state.countries[ni];
+        if(!b || b.infected>0.001) return;
+        const inQ = Math.max(0, b.quarantine*(1-s.quarantineResist));
+        const p = infFrac * s.infectivity * 0.028 * (1-outQ*0.8) * (1-inQ*0.8);
+        if(Math.random() < p){
+          seedCountry(b, c);
+        }
+      });
+    });
+    // air hubs
+    state.hubIdx.forEach(hi=>{
+      const h = state.countries[hi];
+      if(!h || h.infected<=0) return;
+      const infFrac = h.infected/h.population;
+      const outQ = Math.max(0, h.quarantine*(1-s.quarantineResist));
+      state.hubIdx.forEach(hj=>{
+        if(hi===hj) return;
+        const b = state.countries[hj];
+        if(!b || b.infected>0.001) return;
+        const inQ = Math.max(0, b.quarantine*(1-s.quarantineResist));
+        const p = infFrac * s.infectivity * 0.02 * (1-outQ*0.85) * (1-inQ*0.85) * (0.3+b.wealth);
+        if(Math.random() < p){
+          seedCountry(b, h);
+        }
+      });
+      // hub -> random small country occasionally
+      if(Math.random() < infFrac*s.infectivity*0.01*(1-outQ)){
+        const target = state.countries[Math.floor(Math.random()*state.countries.length)];
+        if(target && target.infected<=0.001){
+          seedCountry(target, h);
+        }
+      }
+    });
+  }
 
-  // mutation for virus type
-  if (mod.mutation && game.day>4 && Math.random() < 0.035){
-    const cheap = Object.values(TRAIT_DEFS).filter(d=>!game.traits.has(d.id) && (!d.prereq || game.traits.has(d.prereq)) && traitCost(game,d)<=10);
-    if (cheap.length){
-      const pick = cheap[Math.floor(Math.random()*cheap.length)];
-      game.traits.add(pick.id);
-      game.log.push({day:game.day, type:'mutation', text:`突然変異が発生：「${pick.name}」を無償で獲得した。`});
+  // global research
+  if(!state.cureFound){
+    state.cureProgress += researchGain;
+    if(state.cureProgress >= state.cureThreshold){
+      state.cureFound = true;
+      addNews("治療薬完成", "世界保健機関が治療薬の開発に成功しました。感染者の回復が始まります。", "amber");
     }
   }
 
-  // cure research
-  let cureGain = 0.02;
-  for (const id in game.countries){
-    const c = game.countries[id];
-    cureGain += c.wealth * Math.min(1,c.awareness*2) * 0.055;
+  // DNA gain
+  const dnaGain = (0.35 + globalInfectedCountries*0.045) * s.dnaGainMult;
+  state.dna += dnaGain;
+  if(Math.random() < 0.012){
+    const bonus = 4 + Math.random()*6;
+    state.dna += bonus;
+    addNews("変異", "病原体が自然突然変異を起こし、追加のDNAポイントを獲得しました。", "amber");
   }
-  cureGain += Math.min(1.2, eff.severity*0.4);
-  cureGain *= (1 - eff.drugResist);
-  cureGain *= mod.cureMul;
-  game.cure = Math.min(100, game.cure + cureGain);
 
-  checkGameOver(game, worldAlive, worldE, worldI);
+  state.day++;
 }
 
-function tryIntroduce(src, dst, srcSnap, w, game){
-  if (dst.S <= 0) return;
-  const effW = w * (1-srcSnap.borderClosure) * (1-dst.borderClosure);
-  if (effW<=0) return;
-  const pressure = effW * (srcSnap.E + srcSnap.I) / srcSnap.N;
-  if (dst.I===0 && dst.E===0){
-    const prob = 1 - Math.exp(-pressure*160);
-    if (Math.random() < prob){
-      const seed = Math.min(dst.S, 1 + Math.floor(Math.random()*4));
-      dst.S -= seed; dst.E += seed;
+function seedCountry(target, source){
+  const seed = Math.max(0.001, target.population*0.00003);
+  target.infected = seed;
+  target.healthy -= seed;
+  if(target.healthy<0) target.healthy=0;
+  addNews("拡散", `${source.name} から ${target.name} へ感染が拡大しました。`, "danger");
+}
+
+/* =====================================================================
+   RENDER
+===================================================================== */
+function colorFor(c){
+  if(c.population<=0) return "#1a2620";
+  const infFrac = c.infected/c.population;
+  const deadFrac = c.dead/c.population;
+  if(deadFrac>0.01){
+    const t = Math.min(1, deadFrac*3);
+    return d3.interpolateRgb("#5c2a24", "#e2453c")(t);
+  }
+  if(infFrac>0.0005){
+    const t = Math.min(1, infFrac*4);
+    return d3.interpolateRgb("#2c3d2a", "#e8b23d")(t);
+  }
+  return "#1a2620";
+}
+
+function render(){
+  gCountries.selectAll("path.country").attr("fill", d=>colorFor(d));
+  gBlips.selectAll("g.blip circle")
+    .attr("r", d=> d.infected>0.0005 ? Math.min(9, 2+Math.sqrt(d.infected)*0.6) : 0)
+    .attr("fill", d=> d.dead/d.population>0.03 ? "var(--danger)" : "var(--amber)");
+
+  updateHud();
+
+  let totH=0, totI=0, totD=0;
+  state.countries.forEach(c=>{ totH+=c.healthy; totI+=c.infected; totD+=c.dead; });
+  const tot = state.totalPop || 1;
+  document.getElementById("pctHealthy").textContent = ((totH/tot)*100).toFixed(1)+"%";
+  document.getElementById("pctInfected").textContent = ((totI/tot)*100).toFixed(2)+"%";
+  document.getElementById("pctDead").textContent = ((totD/tot)*100).toFixed(2)+"%";
+  document.getElementById("barHealthy").style.width = ((totH/tot)*100)+"%";
+  document.getElementById("barInfected").style.width = ((totI/tot)*100)+"%";
+  document.getElementById("barDead").style.width = ((totD/tot)*100)+"%";
+
+  checkEnd(totH, totI, totD, tot);
+}
+
+function updateHud(){
+  document.getElementById("hudDay").textContent = state.day;
+  document.getElementById("hudDna").textContent = Math.floor(state.dna);
+  document.getElementById("hudCure").textContent = state.cureFound ? "完成" : Math.min(100, Math.round((state.cureProgress/state.cureThreshold)*100))+"%";
+}
+
+/* =====================================================================
+   END CONDITIONS
+===================================================================== */
+function checkEnd(totH, totI, totD, tot){
+  if(state.phase !== "playing") return;
+  if(totD >= tot*0.995){
+    endGame(true, "human_extinct", totD, totI, tot);
+    return;
+  }
+  if(state.cureFound && (totI+totH) > 0 && (totH/tot) > 0.0005){
+    // cure is active; if infected pool has fully drained and healthy remains, it's a loss
+    if(totI < tot*0.00002 && state.day>3){
+      endGame(false, "cured", totD, totI, tot);
+      return;
     }
+  }
+  if(state.day>6 && totI < 0.001 && totD < tot*0.001 && !state.cureFound){
+    endGame(false, "diedout", totD, totI, tot);
+    return;
+  }
+}
+
+function endGame(win, reason, totD, totI, tot){
+  state.phase = "ended";
+  const infectedCountries = state.countries.filter(c=>c.detected).length;
+  const titleEl = document.getElementById("endTitle");
+  const subEl = document.getElementById("endSub");
+  if(win){
+    titleEl.textContent = "人類絶滅完了";
+    titleEl.className = "end-result win";
+    subEl.textContent = `${state.pathogenName} は ${state.day} 日間で人類を滅ぼしました。`;
   } else {
-    const trickle = Math.min(dst.S, pressure*dst.pop*0.06);
-    dst.S -= trickle; dst.E += trickle;
+    titleEl.textContent = "根絶失敗";
+    titleEl.className = "end-result lose";
+    if(reason==="cured") subEl.textContent = "世界各国が協力して治療薬を完成させ、病原体は根絶されました。";
+    else subEl.textContent = "病原体は十分に拡散する前に感染連鎖が途絶えました。";
   }
+  document.getElementById("endDay").textContent = state.day;
+  document.getElementById("endDead").textContent = Math.round(totD).toLocaleString();
+  document.getElementById("endInfected").textContent = infectedCountries;
+  document.getElementById("endCure").textContent = state.cureFound ? "100%" : Math.round((state.cureProgress/state.cureThreshold)*100)+"%";
+  document.getElementById("endModal").classList.remove("hidden");
 }
 
-function checkGameOver(game, worldAlive, worldE, worldI){
-  if (worldAlive <= game.totalPop*0.0005){
-    game.over = true; game.result = 'win';
-    game.log.push({day:game.day, type:'end', text:'人類は絶滅した。病原体の完全勝利。'});
-    return;
-  }
-  if (game.cure>=100 && (worldE+worldI) < game.totalPop*0.00002){
-    game.over = true; game.result = 'lose';
-    game.log.push({day:game.day, type:'end', text:'治療薬が世界中に行き渡り、感染症は根絶された。'});
-    return;
-  }
-  if (game.day>3){
-    let anyInfected=false;
-    for (const id in game.countries){ const c=game.countries[id]; if (c.E>0.5||c.I>0.5){anyInfected=true;break;} }
-    if (!anyInfected && game.cure<100){
-      game.over = true; game.result = 'lose';
-      game.log.push({day:game.day, type:'end', text:'病原体は拡散に失敗し自然消滅した。'});
-    }
-  }
-}
+document.getElementById("btnRestart").addEventListener("click", ()=>{
+  location.reload();
+});
 
-if (typeof module !== 'undefined'){
-  module.exports = { TRAIT_DEFS, createGame, stepDay, buyTrait, canBuy, traitCost, useReshuffle, aggregateTraitEffects, typeModifiers };
-}
+/* =====================================================================
+   GAME LOOP / SPEED CONTROLS
+===================================================================== */
+document.querySelectorAll(".speed-btn[data-speed]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".speed-btn[data-speed]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    state.speed = parseInt(btn.dataset.speed);
+    state.paused = false;
+    document.getElementById("btnPause").classList.remove("active");
+  });
+});
+document.getElementById("btnPause").addEventListener("click", (e)=>{
+  state.paused = !state.paused;
+  e.target.classList.toggle("active", state.paused);
+});
+
+setInterval(()=>{
+  if(state.phase !== "playing" || state.paused) return;
+  for(let i=0;i<state.speed;i++){ tick(); }
+  render();
+}, 320);
+
+</script>
+</body>
+</html>
