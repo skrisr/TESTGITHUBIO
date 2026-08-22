@@ -1,957 +1,377 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title id="site-title">Ai-Math-Drill/MasterPro | Next-Gen AI Learning Platform</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><path d='M8 12h16M8 16h12M8 20h8' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round'/><circle cx='22' cy='20' r='2' fill='%2338bdf8'/></svg>">
-  <style>
-    :root {
-      --primary: #0f172a;
-      --primary-hover: #1e293b;
-      --accent: #2563eb;
-      --bg-main: #f8fafc;
-      --surface: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --border: #e2e8f0;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-text-size-adjust: 100%;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      overflow-x: hidden;
-    }
-
-    #camouflage {
-      position: relative;
-      width: 100%;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      z-index: 100;
-      background: var(--bg-main);
-    }
-
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: default;
-      user-select: none;
-      max-width: 100%;
-      min-width: 0;
-    }
-
-    .brand-logo-svg {
-      width: 36px;
-      height: 36px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 2px 4px rgba(15,23,42,0.15));
-    }
-
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .brand-title {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      flex-wrap: wrap;
-    }
-
-    .brand-title .main-name {
-      background: linear-gradient(135deg, #0f172a 30%, #2563eb 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-    }
-
-    .brand-title .divider {
-      color: #94a3b8;
-      font-weight: 400;
-      margin: 0 2px;
-    }
-
-    .brand-title .sub-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #2563eb;
-      background: #eff6ff;
-      padding: 1px 6px;
-      border-radius: 4px;
-      border: 1px solid #dbeafe;
-      letter-spacing: 0.02em;
-    }
-
-    .brand-subtitle {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-top: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .lang-switch {
-      display: flex;
-      background: #f1f5f9;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 3px;
-      position: relative;
-      cursor: pointer;
-      width: 130px;
-      height: 32px;
-      user-select: none;
-      flex-shrink: 0;
-    }
-
-    .lang-switch-handle {
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 60px;
-      height: 24px;
-      background: #ffffff;
-      border-radius: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .lang-switch.en .lang-switch-handle {
-      transform: translateX(0px);
-    }
-
-    .lang-switch:not(.en) .lang-switch-handle {
-      transform: translateX(60px);
-    }
-
-    .lang-option {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      z-index: 1;
-      transition: color 0.2s;
-    }
-
-    .lang-switch.en .lang-opt-en,
-    .lang-switch:not(.en) .lang-opt-ja {
-      color: var(--primary);
-    }
-
-    .header-tag {
-      font-size: 11px;
-      background: #f1f5f9;
-      color: var(--text-muted);
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .content-wrapper {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      flex: 1;
-    }
-
-    .top-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    .login-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .login-card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 120px;
-      height: 120px;
-      background-image: url('https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=300&auto=format&fit=crop');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.12;
-      border-bottom-left-radius: 100%;
-      pointer-events: none;
-    }
-
-    .login-card h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -0.01em;
-    }
-
-    .login-card p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-      background: #fff;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .form-control:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-    }
-
-    .submit-btn {
-      width: 100%;
-      padding: 12px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 6px;
-      transition: background 0.2s;
-    }
-
-    .submit-btn:hover {
-      background: var(--primary-hover);
-    }
-
-    .banner-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
-    }
-
-    .banner-img {
-      width: 100%;
-      height: 150px;
-      background-image: url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1000&auto=format&fit=crop');
-      background-size: cover;
-      background-position: center;
-    }
-
-    .banner-body {
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      flex: 1;
-    }
-
-    .banner-body h3 {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .banner-body p {
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .feature-img {
-      width: 100%;
-      height: 110px;
-      background-size: cover;
-      background-position: center;
-    }
-
-    .feature-1 { background-image: url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'); }
-    .feature-2 { background-image: url('https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=600&auto=format&fit=crop'); }
-    .feature-3 { background-image: url('https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop'); }
-
-    .feature-body {
-      padding: 18px;
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    .feature-body strong {
-      color: var(--text-main);
-      display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
-
-    .info-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
-    }
-
-    .info-section h3 {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-
-    .info-box {
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    .info-box strong {
-      color: var(--text-main);
-      display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
-
-    footer {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: auto;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .footer-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
-    .footer-logo-svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    #launcher {
-      position: fixed;
-      inset: 0;
-      background: #0f172a;
-      padding: 16px;
-      overflow-y: auto;
-      display: none;
-      flex-direction: column;
-      gap: 20px;
-      z-index: 50;
-    }
-
-    .launcher-top-bar {
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .launcher-controls {
-      width: 100%;
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .ctrl-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #94a3b8;
-      font-size: 13px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .toggle-label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .launcher-input {
-      width: 100%;
-      padding: 10px 14px;
-      font-size: 14px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #fff;
-      outline: none;
-    }
-
-    .launcher-input:focus {
-      border-color: var(--accent);
-    }
-
-    .btn-launch {
-      padding: 0 20px;
-      font-size: 14px;
-      font-weight: 600;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .launcher-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .launcher-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 18px 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.15s, border-color 0.15s;
-    }
-
-    .launcher-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--accent);
-    }
-
-    .launcher-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #f1f5f9;
-      word-break: break-all;
-    }
-
-    iframe {
-      width: 100vw;
-      height: 100vh;
-      border: none;
-      display: none;
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-    }
-
-    @media (max-width: 768px) {
-      header {
-        padding: 10px 14px;
-      }
-      .top-section {
-        grid-template-columns: 1fr;
-      }
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-      .info-grid {
-        grid-template-columns: 1fr;
-      }
-      .content-wrapper {
-        padding: 16px 12px;
-        gap: 16px;
-      }
-      .launcher-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-  </style>
-</head>
-<body class="en-mode">
-
-  <div id="camouflage">
-    <header>
-      <div class="brand" id="secret-trigger">
-        <svg class="brand-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-          <defs>
-            <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#0f172a" />
-              <stop offset="100%" stop-color="#2563eb" />
-            </linearGradient>
-          </defs>
-          <rect width="40" height="40" rx="10" fill="url(#brand-grad)" />
-          <path d="M10 28L28 10M14 10H30V26" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <circle cx="28" cy="12" r="2.5" fill="#ffffff" />
-          <path d="M12 22H22" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="2 2" />
-        </svg>
-        <div class="brand-text">
-          <div class="brand-title">
-            <span class="main-name">Ai-Math-Drill</span>
-            <span class="divider">/</span>
-            <span class="sub-name">MasterPro</span>
-          </div>
-          <div class="brand-subtitle">
-            <span class="lang-en">Next-Gen AI Learning Platform</span>
-            <span class="lang-ja" style="display:none;">次世代型AI学習プラットフォーム</span>
-          </div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <div class="lang-switch en" id="lang-switch">
-          <div class="lang-switch-handle"></div>
-          <div class="lang-option lang-opt-en">EN</div>
-          <div class="lang-option lang-opt-ja">JP</div>
-        </div>
-        <div class="header-tag">
-          <span class="lang-en">Standard Edition</span>
-          <span class="lang-ja" style="display:none;">スタンダード版</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="content-wrapper">
-      <div class="top-section">
-        <div class="login-card">
-          <h2>
-            <span class="lang-en">Student Login</span>
-            <span class="lang-ja" style="display:none;">受講生ログイン</span>
-          </h2>
-          <p>
-            <span class="lang-en">Enter your ID and password to access the practice portal.</span>
-            <span class="lang-ja" style="display:none;">IDとパスワードを入力して演習画面へ進んでください。</span>
-          </p>
-          <form id="login-form">
-            <div class="form-group">
-              <label>
-                <span class="lang-en">Student ID</span>
-                <span class="lang-ja" style="display:none;">受講生ID</span>
-              </label>
-              <input type="text" class="form-control" data-placeholder-en="e.g. 12345678" data-placeholder-ja="例: 12345678" placeholder="e.g. 12345678" required>
-            </div>
-            <div class="form-group">
-              <label>
-                <span class="lang-en">Password</span>
-                <span class="lang-ja" style="display:none;">パスワード</span>
-              </label>
-              <input type="password" class="form-control" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="submit-btn">
-              <span class="lang-en">Sign In</span>
-              <span class="lang-ja" style="display:none;">ログイン</span>
-            </button>
-          </form>
-        </div>
-
-        <div class="banner-card">
-          <div class="banner-img"></div>
-          <div class="banner-body">
-            <h3>
-              <span class="lang-en">Personalized Learning Program</span>
-              <span class="lang-ja" style="display:none;">個別最適化学習プログラム</span>
-            </h3>
-            <p>
-              <span class="lang-en">Automatically assesses mastery levels by unit and generates practice questions tailored to each student's proficiency, supporting efficient step-by-step progress.</span>
-              <span class="lang-ja" style="display:none;">単元ごとの定着度を自動判定し、一人ひとりの習熟度に応じた演習問題を自動で出題します。基礎から発展まで効率的なステップアップをサポート。</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-img feature-1"></div>
-          <div class="feature-body">
-            <strong>
-              <span class="lang-en">Real-Time Analytics</span>
-              <span class="lang-ja" style="display:none;">リアルタイム解析</span>
-            </strong>
-            <span class="lang-en">Multi-dimensionally analyzes answer speed and accuracy to visualize current proficiency.</span>
-            <span class="lang-ja" style="display:none;">解答スピードや正答率を多角的に分析し、現在の習熟度を可視化します。</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-img feature-2"></div>
-          <div class="feature-body">
-            <strong>
-              <span class="lang-en">Automated Weakness Remediation</span>
-              <span class="lang-ja" style="display:none;">弱点自動補強</span>
-            </strong>
-            <span class="lang-en">Identifies core stumbling blocks from mistake patterns and targets them with focused drills.</span>
-            <span class="lang-ja" style="display:none;">間違えた問題の傾向から根本的なつまずき原因を特定し、重点的に出題します。</span>
-          </div>
-        </div>
-        <div class="feature-card">
-          <div class="feature-img feature-3"></div>
-          <div class="feature-body">
-            <strong>
-              <span class="lang-en">Comprehensive Progress Reports</span>
-              <span class="lang-ja" style="display:none;">詳細な進捗レポート</span>
-            </strong>
-            <span class="lang-en">Easily track and manage daily learning achievements through clear graphs and metrics.</span>
-            <span class="lang-ja" style="display:none;">日々の学習成果をグラフや数値でわかりやすく確認・管理できます。</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="info-section">
-        <h3>
-          <span class="lang-en">System Overview & Guidelines</span>
-          <span class="lang-ja" style="display:none;">システム概要・利用案内</span>
-        </h3>
-        <div class="info-grid">
-          <div class="info-box">
-            <strong>
-              <span class="lang-en">About the Curriculum</span>
-              <span class="lang-ja" style="display:none;">カリキュラムについて</span>
-            </strong>
-            <span class="lang-en">Covers all junior high math units. Automatically extracts weaknesses from historical answers to optimize review curricula.</span>
-            <span class="lang-ja" style="display:none;">中学数学の全単元に対応。演習問題の解答履歴から弱点を自動抽出し、復習用カリキュラムを随時最適化します。</span>
-          </div>
-          <div class="info-box">
-            <strong>
-              <span class="lang-en">System Requirements</span>
-              <span class="lang-ja" style="display:none;">動作環境</span>
-            </strong>
-            <span class="lang-en">Compatible with modern web browsers on PCs, tablets, and smartphones. Please use a stable connection.</span>
-            <span class="lang-ja" style="display:none;">PC、タブレット、スマートフォン各端末のブラウザに対応しています。安定した通信環境下でご利用ください。</span>
-          </div>
-          <div class="info-box">
-            <strong>
-              <span class="lang-en">Operation & Inquiries</span>
-              <span class="lang-ja" style="display:none;">運営・お問い合わせ</span>
-            </strong>
-            <span class="lang-en">Education Technologies Corp.<br>2-10-2 Hyakunincho, Shinjuku-ku, Tokyo<br>TEL: 050-5742-6546</span>
-            <span class="lang-ja" style="display:none;">株式会社エデュケーション・テクノロジーズ<br>東京都新宿区百人町2丁目10-2<br>TEL: 050-5742-6546</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <footer>
-      <div class="footer-brand">
-        <svg class="footer-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-          <rect width="40" height="40" rx="8" fill="#0f172a" />
-          <path d="M10 28L28 10M14 10H30V26" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>
-        <span>Education Technologies Corp.</span>
-      </div>
-      <div>&copy; Education Technologies Corp. All rights reserved.</div>
-    </footer>
-  </div>
-
-  <div id="launcher">
-    <div class="launcher-top-bar">
-      <div class="lang-switch en" id="launcher-lang-switch">
-        <div class="lang-switch-handle"></div>
-        <div class="lang-option lang-opt-en">EN</div>
-        <div class="lang-option lang-opt-ja">JP</div>
-      </div>
-    </div>
-    <div class="launcher-controls">
-      <div class="ctrl-row">
-        <span class="launcher-label-text">
-          <span class="lang-en">Application Launcher</span>
-          <span class="lang-ja" style="display:none;">アプリケーションランチャー</span>
-        </span>
-        <label class="toggle-label">
-          <input type="checkbox" id="iframe-toggle" checked> 
-          <span class="lang-en">Enable in-site display (iframe)</span>
-          <span class="lang-ja" style="display:none;">サイト内表示 (iframe) を有効にする</span>
-        </label>
-      </div>
-      <div class="input-group">
-        <input type="text" id="custom-url-input" class="launcher-input" placeholder="https://..." autocomplete="off">
-        <button id="custom-url-btn" class="btn-launch">
-          <span class="lang-en">Open</span>
-          <span class="lang-ja" style="display:none;">開く</span>
-        </button>
-      </div>
-      <input type="text" id="search-input" class="launcher-input" data-placeholder-en="Search sites..." data-placeholder-ja="サイトを検索..." placeholder="Search sites..." autocomplete="off">
-    </div>
-
-    <div class="launcher-grid" id="grid">
-      <div class="launcher-card" data-url="https://math.wales/"><div class="launcher-title">math.wales</div></div>
-      <div class="launcher-card" data-url="https://unblockedbloxd.com/"><div class="launcher-title">unblockedbloxd.com</div></div>
-      <div class="launcher-card" data-url="https://unblockedbloxd.us"><div class="launcher-title">unblockedbloxd.us</div></div>
-      <div class="launcher-card" data-url="https://bloxdunblocked.com/"><div class="launcher-title">bloxdunblocked.com</div></div>
-      <div class="launcher-card" data-url="https://bloxdunblocked.space/"><div class="launcher-title">bloxdunblocked.space</div></div>
-      <div class="launcher-card" data-url="https://bloxdunblocked.org/"><div class="launcher-title">bloxdunblocked.org</div></div>
-      <div class="launcher-card" data-url="https://bloxdunblocked.work/"><div class="launcher-title">bloxdunblocked.work</div></div>
-      <div class="launcher-card" data-url="https://unbloxd.com/"><div class="launcher-title">unbloxd.com</div></div>
-      <div class="launcher-card" data-url="https://unbloxd.site/"><div class="launcher-title">unbloxd.site</div></div>
-      <div class="launcher-card" data-url="https://bloxd.com/"><div class="launcher-title">bloxd.com</div></div>
-      <div class="launcher-card" data-url="https://bloxd.dev/"><div class="launcher-title">bloxd.dev</div></div>
-      <div class="launcher-card" data-url="https://bloxed.net/"><div class="launcher-title">bloxed.net</div></div>
-      <div class="launcher-card" data-url="https://bloxdio.space/"><div class="launcher-title">bloxdio.space</div></div>
-      <div class="launcher-card" data-url="https://bloxdk12.com/"><div class="launcher-title">bloxdk12.com</div></div>
-      <div class="launcher-card" data-url="https://playbloxd.com/"><div class="launcher-title">playbloxd.com</div></div>
-      <div class="launcher-card" data-url="https://bedwars.space/"><div class="launcher-title">bedwars.space</div></div>
-      <div class="launcher-card" data-url="https://bedwarsonline.net/"><div class="launcher-title">bedwarsonline.net</div></div>
-      <div class="launcher-card" data-url="https://buildhub.work/"><div class="launcher-title">buildhub.work</div></div>
-      <div class="launcher-card" data-url="https://buildhub.club/"><div class="launcher-title">buildhub.club</div></div>
-      <div class="launcher-card" data-url="https://skillhub.vip/"><div class="launcher-title">skillhub.vip</div></div>
-      <div class="launcher-card" data-url="https://classcraft.space/"><div class="launcher-title">classcraft.space</div></div>
-      <div class="launcher-card" data-url="https://classcraft.site/"><div class="launcher-title">classcraft.site</div></div>
-      <div class="launcher-card" data-url="https://collabspace.space/"><div class="launcher-title">collabspace.space</div></div>
-      <div class="launcher-card" data-url="https://creativebuilding.site/"><div class="launcher-title">creativebuilding.site</div></div>
-      <div class="launcher-card" data-url="https://creativebuilding.space/"><div class="launcher-title">creativebuilding.space</div></div>
-      <div class="launcher-card" data-url="https://buildminecreate.com/"><div class="launcher-title">buildminecreate.com</div></div>
-      <div class="launcher-card" data-url="https://iogamesunblocked.com/"><div class="launcher-title">iogamesunblocked.com</div></div>
-      <div class="launcher-card" data-url="https://unblockedgames.club/"><div class="launcher-title">unblockedgames.club</div></div>
-      <div class="launcher-card" data-url="https://math.icu/"><div class="launcher-title">math.icu</div></div>
-      <div class="launcher-card" data-url="https://geometry.com.de/"><div class="launcher-title">geometry.com.de</div></div>
-      <div class="launcher-card" data-url="https://geometry.quest/"><div class="launcher-title">geometry.quest</div></div>
-      <div class="launcher-card" data-url="https://geometries.top/"><div class="launcher-title">geometries.top</div></div>
-      <div class="launcher-card" data-url="https://trigonometry.website/"><div class="launcher-title">trigonometry.website</div></div>
-      <div class="launcher-card" data-url="https://geology.top/"><div class="launcher-title">geology.top</div></div>
-      <div class="launcher-card" data-url="https://archeology.top/"><div class="launcher-title">archeology.top</div></div>
-      <div class="launcher-card" data-url="https://staging.bloxd.io/"><div class="launcher-title">staging.bloxd.io</div></div>
-      <div class="launcher-card" data-url="https://doodlecube.io/"><div class="launcher-title">doodlecube.io</div></div>
-      <div class="launcher-card" data-url="https://eviltower.io/"><div class="launcher-title">eviltower.io</div></div>
-      <div class="launcher-card" data-url="https://bloxdhop.io/"><div class="launcher-title">bloxdhop.io</div></div>
-    </div>
-  </div>
-
-  <iframe id="game-iframe" 
-    sandbox="allow-downloads allow-downloads-without-user-activation allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation allow-top-navigation-by-user-activation allow-top-navigation-to-custom-protocols"
-    allow="accelerometer; ambient-light-sensor; attribution-reporting; autoplay; bluetooth; browsing-topics; camera; clipboard-read; clipboard-write; compute-pressure; cross-origin-isolated; direct-sockets; display-capture; encrypted-media; gamepad; geolocation; gyroscope; hid; identity-credentials-get; idle-detection; local-fonts; magnetometer; microphone; midi; otp-credentials; payment; picture-in-picture; private-aggregation; publickey-credentials-get; screen-wake-lock; serial; speaker-selection; storage-access; usb; web-share; window-management; xr-spatial-tracking">
-  </iframe>
-
-  <script>
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-    });
-
-    const siteTitle = document.getElementById('site-title');
-    const searchInput = document.getElementById('search-input');
-
-    function updatePageTitle(isEn) {
-      const launcherActive = document.getElementById('launcher').style.display === 'flex';
-      if (launcherActive) {
-        siteTitle.textContent = isEn ? "App Launcher" : "アプリランチャー";
-      } else {
-        siteTitle.textContent = isEn ? "Ai-Math-Drill/MasterPro | Next-Gen AI Learning Platform" : "Ai-Math-Drill/MasterPro | 次世代型AI学習プラットフォーム";
-      }
-    }
-
-    function toggleLanguage() {
-      const body = document.body;
-      const isEn = body.classList.toggle('en-mode');
-      
-      document.querySelectorAll('#lang-switch, #launcher-lang-switch').forEach(sw => {
-        if (isEn) {
-          sw.classList.add('en');
-        } else {
-          sw.classList.remove('en');
-        }
-      });
-      
-      document.querySelectorAll('.lang-en').forEach(el => {
-        el.style.display = isEn ? 'inline' : 'none';
-      });
-      document.querySelectorAll('.lang-ja').forEach(el => {
-        el.style.display = isEn ? 'none' : 'inline';
-      });
-
-      document.querySelectorAll('input[data-placeholder-en]').forEach(input => {
-        input.placeholder = isEn ? input.getAttribute('data-placeholder-en') : input.getAttribute('data-placeholder-ja');
-      });
-      
-      updatePageTitle(isEn);
-    }
-
-    const langSwitch = document.getElementById('lang-switch');
-    const launcherLangSwitch = document.getElementById('launcher-lang-switch');
-    
-    langSwitch.addEventListener('click', toggleLanguage);
-    launcherLangSwitch.addEventListener('click', toggleLanguage);
-
-    let clickCount = 0;
-    let lastClickTime = 0;
-    
-    document.getElementById('secret-trigger').addEventListener('click', () => {
-      const currentTime = new Date().getTime();
-      if (currentTime - lastClickTime < 600) {
-        clickCount++;
-      } else {
-        clickCount = 1;
-      }
-      lastClickTime = currentTime;
-
-      if (clickCount >= 5) {
-        document.getElementById('camouflage').style.display = 'none';
-        document.getElementById('launcher').style.display = 'flex';
-        const isEn = document.body.classList.contains('en-mode');
-        updatePageTitle(isEn);
-        clickCount = 0;
-      }
-    });
-
-    const iframe = document.getElementById("game-iframe");
-    const launcher = document.getElementById("launcher");
-    const customUrlInput = document.getElementById("custom-url-input");
-    const customUrlBtn = document.getElementById("custom-url-btn");
-    const cards = document.querySelectorAll(".launcher-card");
-    const iframeToggle = document.getElementById("iframe-toggle");
-
-    function openApp(url) {
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-      
-      if (iframeToggle.checked) {
-        iframe.src = url;
-        iframe.style.display = "block";
-        launcher.style.display = "none";
-      } else {
-        window.location.href = url;
-      }
-    }
-
-    searchInput.addEventListener("input", (e) => {
-      const keyword = e.target.value.toLowerCase();
-      cards.forEach(card => {
-        const title = card.querySelector(".launcher-title").textContent.toLowerCase();
-        card.style.display = title.includes(keyword) ? "block" : "none";
-      });
-    });
-
-    cards.forEach(card => {
-      card.addEventListener("click", () => {
-        openApp(card.dataset.url);
-      });
-    });
-
-    customUrlBtn.addEventListener("click", () => {
-      const url = customUrlInput.value.trim();
-      if (url !== "") openApp(url);
-    });
-
-    customUrlInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const url = customUrlInput.value.trim();
-        if (url !== "") openApp(url);
-      }
-    });
-  </script>
-</body>
-</html>
+// ============================================================
+// Plague simulation core — SEIRD metapopulation model
+// S: Susceptible, E: Exposed(incubating), I: Infectious, R: Recovered/Immune, D: Dead
+// ============================================================
+
+const TRAIT_DEFS = (function(){
+  const T = {};
+  function add(id, o){ o.id = id; T[id] = o; }
+
+  // ---------- TRANSMISSION ----------
+  add('T_AIR1',      {cat:'transmission', kind:'air',       name:'空気感染 I',       desc:'咳やくしゃみの飛沫で拡散する。都市部で効果的。', cost:2,  power:1.0, prereq:null});
+  add('T_AIR2',      {cat:'transmission', kind:'air',       name:'空気感染 II',      desc:'より微細な飛沫核として空気中に浮遊する。',       cost:7,  power:1.7, prereq:'T_AIR1'});
+  add('T_AIR3',      {cat:'transmission', kind:'air',       name:'空気感染 III',     desc:'エアロゾル化し、換気の悪い空間で爆発的に広がる。', cost:16, power:2.6, prereq:'T_AIR2'});
+  add('T_WATER1',    {cat:'transmission', kind:'water',     name:'水系感染 I',       desc:'汚染水を介して広がる。衛生環境の悪い地域で有効。', cost:2,  power:1.0, prereq:null});
+  add('T_WATER2',    {cat:'transmission', kind:'water',     name:'水系感染 II',      desc:'下水系統にも耐性を持ち浄水処理を一部すり抜ける。', cost:7,  power:1.7, prereq:'T_WATER1'});
+  add('T_WATER3',    {cat:'transmission', kind:'water',     name:'水系感染 III',     desc:'ほぼ全ての水源を汚染経路として利用できる。',       cost:16, power:2.6, prereq:'T_WATER2'});
+  add('T_BLOOD1',    {cat:'transmission', kind:'blood',     name:'血液感染 I',       desc:'注射針や輸血を介して感染する。',                 cost:3,  power:0.9, prereq:null});
+  add('T_BLOOD2',    {cat:'transmission', kind:'blood',     name:'血液感染 II',      desc:'わずかな体液接触でも感染するようになる。',         cost:9,  power:1.6, prereq:'T_BLOOD1'});
+  add('T_RODENT1',   {cat:'transmission', kind:'rodent',    name:'げっ歯類媒介 I',   desc:'ネズミを宿主として農村部で広がる。',              cost:3,  power:0.8, prereq:null});
+  add('T_RODENT2',   {cat:'transmission', kind:'rodent',    name:'げっ歯類媒介 II',  desc:'都市部のネズミ個体群にも適応する。',              cost:9,  power:1.5, prereq:'T_RODENT1'});
+  add('T_INSECT1',   {cat:'transmission', kind:'insect',    name:'昆虫媒介 I',       desc:'蚊などの吸血昆虫が媒介する。高温地域で有効。',     cost:3,  power:0.9, prereq:null});
+  add('T_INSECT2',   {cat:'transmission', kind:'insect',    name:'昆虫媒介 II',      desc:'複数種の昆虫を媒介者として利用できる。',           cost:9,  power:1.6, prereq:'T_INSECT1'});
+  add('T_LIVESTOCK1',{cat:'transmission', kind:'livestock', name:'家畜媒介 I',       desc:'家畜との接触で広がる。牧畜地域で有効。',           cost:3,  power:0.8, prereq:null});
+  add('T_LIVESTOCK2',{cat:'transmission', kind:'livestock', name:'家畜媒介 II',      desc:'畜産物の流通経路にも乗って拡散する。',             cost:9,  power:1.5, prereq:'T_LIVESTOCK1'});
+
+  // ---------- SYMPTOMS ----------
+  // mild
+  add('SY_NAUSEA',   {cat:'symptom', tier:1, name:'吐き気',       desc:'軽度の消化器症状。',                 cost:2, inf:0.3, sev:0.05, leth:0.01, prereq:null});
+  add('SY_COUGH',     {cat:'symptom', tier:1, name:'咳',          desc:'空気感染との相乗効果を持つ。',        cost:2, inf:0.5, sev:0.06, leth:0.01, prereq:null, synergy:'air'});
+  add('SY_SNEEZE',    {cat:'symptom', tier:1, name:'くしゃみ',    desc:'空気感染との相乗効果を持つ。',        cost:2, inf:0.5, sev:0.06, leth:0.01, prereq:null, synergy:'air'});
+  add('SY_RASH',      {cat:'symptom', tier:1, name:'発疹',        desc:'皮膚に軽い症状が現れる。',            cost:3, inf:0.2, sev:0.08, leth:0.02, prereq:null});
+  add('SY_DIARRHEA',  {cat:'symptom', tier:1, name:'下痢',        desc:'水系感染との相乗効果を持つ。',        cost:3, inf:0.4, sev:0.10, leth:0.03, prereq:null, synergy:'water'});
+  // mid
+  add('SY_FEVER',     {cat:'symptom', tier:2, name:'発熱',        desc:'免疫反応の高まりを示す。',            cost:6, inf:0.1, sev:0.10, leth:0.03, prereq:'SY_NAUSEA'});
+  add('SY_VOMIT',     {cat:'symptom', tier:2, name:'嘔吐',        desc:'吐き気が悪化した状態。',              cost:7, inf:0.2, sev:0.12, leth:0.04, prereq:'SY_NAUSEA'});
+  add('SY_LESION',    {cat:'symptom', tier:2, name:'皮膚病変',    desc:'発疹が進行し組織が損傷する。',        cost:8, inf:0.1, sev:0.15, leth:0.05, prereq:'SY_RASH'});
+  add('SY_PNEUMONIA', {cat:'symptom', tier:2, name:'肺炎',        desc:'呼吸器が重度に侵される。',            cost:9, inf:0.15,sev:0.18, leth:0.08, prereq:'SY_COUGH'});
+  add('SY_INSOMNIA',  {cat:'symptom', tier:2, name:'不眠症',      desc:'神経系への影響が現れ始める。',        cost:6, inf:0.05,sev:0.10, leth:0.03, prereq:null});
+  // severe
+  add('SY_SEIZURE',   {cat:'symptom', tier:3, name:'発作',        desc:'神経系が重度に損傷する。',            cost:15, inf:0.05, sev:0.20, leth:0.10, prereq:'SY_INSOMNIA'});
+  add('SY_NECROSIS',  {cat:'symptom', tier:3, name:'壊死',        desc:'組織が広範囲に壊死する。',            cost:16, inf:0.05, sev:0.25, leth:0.15, prereq:'SY_LESION'});
+  add('SY_HEMSHOCK',  {cat:'symptom', tier:3, name:'出血性ショック', desc:'血管系が破綻し出血が止まらない。', cost:18, inf:0.05, sev:0.30, leth:0.20, prereq:'SY_PNEUMONIA'});
+  add('SY_ORGANFAIL', {cat:'symptom', tier:3, name:'臓器不全',    desc:'複数の臓器が機能を停止し始める。',    cost:17, inf:0.0,  sev:0.30, leth:0.22, prereq:'SY_SEIZURE'});
+  // lethal
+  add('SY_COMA',      {cat:'symptom', tier:4, name:'昏睡',        desc:'意識が失われ回復が困難になる。',      cost:28, inf:0.0, sev:0.35, leth:0.30, prereq:'SY_HEMSHOCK'});
+  add('SY_TOTALFAIL', {cat:'symptom', tier:4, name:'全身性臓器不全', desc:'生命維持が不可能な状態に陥る。',  cost:32, inf:0.0, sev:0.40, leth:0.40, prereq:'SY_ORGANFAIL'});
+
+  // ---------- ABILITIES ----------
+  add('A_COLD1', {cat:'ability', name:'耐寒性 I', desc:'寒冷な気候での感染力低下を軽減する。', cost:4,  prereq:null, effect:{coldResist:0.5}});
+  add('A_COLD2', {cat:'ability', name:'耐寒性 II',desc:'寒冷な気候でも通常通り感染できる。',   cost:11, prereq:'A_COLD1', effect:{coldResist:1.0}});
+  add('A_HEAT1', {cat:'ability', name:'耐熱性 I', desc:'高温な気候での感染力低下を軽減する。', cost:4,  prereq:null, effect:{heatResist:0.5}});
+  add('A_HEAT2', {cat:'ability', name:'耐熱性 II',desc:'高温な気候でも通常通り感染できる。',   cost:11, prereq:'A_HEAT1', effect:{heatResist:1.0}});
+  add('A_DRUG1', {cat:'ability', name:'薬剤耐性 I',  desc:'治療薬の研究進行を15%遅らせる。', cost:5,  prereq:null,       effect:{drugResist:0.15}});
+  add('A_DRUG2', {cat:'ability', name:'薬剤耐性 II', desc:'治療薬の研究進行を30%遅らせる。', cost:13, prereq:'A_DRUG1', effect:{drugResist:0.30}});
+  add('A_DRUG3', {cat:'ability', name:'薬剤耐性 III',desc:'治療薬の研究進行を50%遅らせる。', cost:24, prereq:'A_DRUG2', effect:{drugResist:0.50}});
+  add('A_HARDEN1',{cat:'ability', name:'遺伝子強化 I',  desc:'各国の警戒度上昇を25%抑制する。', cost:6,  prereq:null,          effect:{stealth:0.25}});
+  add('A_HARDEN2',{cat:'ability', name:'遺伝子強化 II', desc:'各国の警戒度上昇を45%抑制する。', cost:16, prereq:'A_HARDEN1',   effect:{stealth:0.45}});
+
+  return T;
+})();
+
+// active (repeatable) ability, not part of tree unlock state
+const RESHUFFLE_COST_BASE = 20;
+
+function climateAffinity(kind, clim, dens, wealth){
+  switch(kind){
+    case 'air':       return 0.5 + 0.6*dens;
+    case 'water':     return 0.4 + 0.8*(1-wealth);
+    case 'blood':     return 0.55 + 0.35*(1-wealth);
+    case 'rodent':    return 0.45 + 0.55*(1-wealth);
+    case 'insect':    return 0.25 + 1.0*clim;
+    case 'livestock': return 0.5 + 0.5*(1-dens);
+    default: return 0.5;
+  }
+}
+
+function makeCountryState(c){
+  const pop = Math.round(c.pop * 1e6);
+  return {
+    id: c.id, name: c.name, pop, wealth: c.wealth, dens: c.dens, clim: c.clim,
+    S: pop, E: 0, I: 0, R: 0, D: 0,
+    awareness: 0, borderClosure: 0,
+    infectedEver: false,
+  };
+}
+
+function createGame(countryData, edges, opts){
+  opts = opts || {};
+  const countries = {};
+  let totalPop = 0;
+  countryData.forEach(row => {
+    const c = {id:row[0], name:row[1], pop:row[2], wealth:row[3], dens:row[4], clim:row[5]};
+    countries[c.id] = makeCountryState(c);
+    totalPop += countries[c.id].pop;
+  });
+  const game = {
+    day: 0,
+    dna: 6,
+    cure: 0,
+    diseaseType: opts.diseaseType || 'virus',
+    diseaseName: opts.diseaseName || 'X-Strain',
+    traits: new Set(),
+    countries,
+    edges: edges || [],
+    totalPop,
+    globalPanic: 0,
+    log: [],
+    over: false,
+    result: null,
+    reshuffleCount: 0,
+  };
+  return game;
+}
+
+function typeModifiers(type){
+  switch(type){
+    case 'bacteria': return {transCost:0.85, symCost:1.0, drugCostMul:0.8, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0};
+    case 'virus':     return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0, mutation:true};
+    case 'fungus':    return {transCost:1.15,symCost:0.85,drugCostMul:1.0, betaMul:0.85,cureMul:0.85,startPanic:0, lethMul:1.0};
+    case 'parasite':  return {transCost:1.2, symCost:0.8, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:0.8, stealthMul:0.8};
+    case 'prion':     return {transCost:1.6, symCost:0.8, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.3};
+    case 'bioweapon': return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0.15, lethMul:1.1, preloaded:['T_AIR1','T_WATER1']};
+    default: return {transCost:1.0, symCost:1.0, drugCostMul:1.0, betaMul:1.0, cureMul:1.0, startPanic:0, lethMul:1.0};
+  }
+}
+
+function traitCost(game, def){
+  const mod = typeModifiers(game.diseaseType);
+  let cost = def.cost;
+  if (def.cat === 'transmission') cost *= mod.transCost;
+  if (def.cat === 'symptom') cost *= mod.symCost;
+  if (def.id.startsWith('A_DRUG')) cost *= (mod.drugCostMul||1);
+  return Math.round(cost*10)/10;
+}
+
+function canBuy(game, id){
+  const def = TRAIT_DEFS[id];
+  if (!def) return false;
+  if (game.traits.has(id)) return false;
+  if (def.prereq && !game.traits.has(def.prereq)) return false;
+  return game.dna >= traitCost(game, def);
+}
+
+function buyTrait(game, id){
+  if (!canBuy(game, id)) return false;
+  const def = TRAIT_DEFS[id];
+  game.dna -= traitCost(game, def);
+  game.traits.add(id);
+  game.log.push({day: game.day, type:'evolve', text:`「${def.name}」を獲得した。`});
+  return true;
+}
+
+function useReshuffle(game){
+  const cost = RESHUFFLE_COST_BASE + game.reshuffleCount*10;
+  if (game.dna < cost || game.cure <= 0) return false;
+  game.dna -= cost;
+  game.reshuffleCount++;
+  game.cure = Math.max(0, game.cure - 22);
+  game.log.push({day: game.day, type:'reshuffle', text:'遺伝子再構成を実行。治療薬の研究が後退した。'});
+  return true;
+}
+
+function aggregateTraitEffects(game){
+  const mod = typeModifiers(game.diseaseType);
+  const trans = {air:0,water:0,blood:0,rodent:0,insect:0,livestock:0};
+  const synergy = {air:0,water:0,blood:0,rodent:0,insect:0,livestock:0};
+  let infectivity = 0, severity = 0, lethality = 0;
+  let coldResist = 0, heatResist = 0, drugResist = 0, stealth = 0;
+  const owned = new Set(game.traits);
+  if (mod.preloaded) mod.preloaded.forEach(t=>owned.add(t));
+
+  owned.forEach(id=>{
+    const def = TRAIT_DEFS[id];
+    if (!def) return;
+    if (def.cat === 'transmission') trans[def.kind] += def.power;
+    else if (def.cat === 'symptom') {
+      infectivity += def.inf; severity += def.sev; lethality += def.leth;
+      if (def.synergy) synergy[def.synergy] += def.inf*0.8;
+    }
+    else if (def.cat === 'ability') {
+      if (def.effect.coldResist) coldResist = Math.max(coldResist, def.effect.coldResist);
+      if (def.effect.heatResist) heatResist = Math.max(heatResist, def.effect.heatResist);
+      if (def.effect.drugResist) drugResist = Math.max(drugResist, def.effect.drugResist);
+      if (def.effect.stealth) stealth = Math.max(stealth, def.effect.stealth);
+    }
+  });
+  lethality *= mod.lethMul;
+  if (mod.stealthMul) stealth = 1-((1-stealth)*mod.stealthMul);
+  return {trans, synergy, infectivity, severity, lethality, coldResist, heatResist, drugResist, stealth};
+}
+
+const GAMMA_BASE = 1/11;
+
+function computeR0(country, eff){
+  let score = 0;
+  for (const kind in eff.trans){
+    const p = eff.trans[kind];
+    if (p<=0) continue;
+    let power = p;
+    // symptom-transmission synergy: coughing/sneezing boost air, diarrhea boosts water, etc.
+    power += eff.synergy[kind] || 0;
+    score += power * climateAffinity(kind, country.clim, country.dens, country.wealth);
+  }
+  let r0 = 0.35 + score*1.3 + eff.infectivity*0.55;
+  return r0;
+}
+
+function computeBeta(country, eff, mod){
+  let r0 = computeR0(country, eff) * mod.betaMul;
+  let beta = r0 * GAMMA_BASE;
+  beta *= (0.75 + 0.5*country.dens);
+  // climate penalties without resistance
+  if (country.clim < 0.3){
+    const penalty = (0.3-country.clim)/0.3; // 0..1
+    beta *= (1 - penalty*0.5*(1-eff.coldResist));
+  }
+  if (country.clim > 0.7){
+    const penalty = (country.clim-0.7)/0.3;
+    beta *= (1 - penalty*0.35*(1-eff.heatResist));
+  }
+  // healthcare/awareness mitigation (lockdowns, quarantine, hygiene campaigns)
+  const mitigationStrength = Math.min(0.8, 0.28 + 0.4*country.wealth);
+  beta *= (1 - country.awareness*mitigationStrength);
+  return Math.max(0, beta);
+}
+
+const INCUBATION_DAYS = 4;
+const INFECTIOUS_DAYS = 11;
+
+function stepDay(game){
+  if (game.over) return;
+  game.day++;
+  const eff = aggregateTraitEffects(game);
+  const mod = typeModifiers(game.diseaseType);
+  const sigma = 1/INCUBATION_DAYS;
+  const gammaBase = 1/INFECTIOUS_DAYS;
+  const cureFrac = game.cure/100;
+
+  let worldI = 0, worldE = 0, worldD = 0, worldInfectedCountries = 0, worldAlive = 0;
+
+  // snapshot for migration pass
+  const snapshot = {};
+  for (const id in game.countries){
+    const c = game.countries[id];
+    snapshot[id] = {E:c.E, I:c.I, N:c.pop, borderClosure:c.borderClosure};
+  }
+
+  for (const id in game.countries){
+    const c = game.countries[id];
+    const beta = computeBeta(c, eff, mod);
+
+    const N = c.pop;
+    const newExposed = Math.min(c.S, beta * c.S * c.I / N);
+    const newInfectious = Math.min(c.E, sigma * c.E);
+    const gammaEff = gammaBase * (1 + cureFrac*2.5);
+    const resolving = Math.min(c.I, gammaEff * c.I);
+
+    let cfrBase = Math.min(0.95, eff.lethality);
+    let cfrEff = cfrBase * (1 - c.wealth*0.45);
+    cfrEff *= (1 - cureFrac*0.95);
+    cfrEff = Math.max(0, cfrEff);
+
+    const newDead = resolving * cfrEff;
+    const newRecovered = resolving - newDead;
+
+    c.S -= newExposed;
+    c.E += newExposed - newInfectious;
+    c.I += newInfectious - resolving;
+    c.R += newRecovered;
+    c.D += newDead;
+
+    // clamp tiny negatives from float error
+    if (c.S<0) c.S=0; if (c.E<0) c.E=0; if (c.I<0) c.I=0;
+
+    if (!c.infectedEver && (c.E+c.I) > 0.5){
+      c.infectedEver = true;
+      const bonus = 5 + c.wealth*10;
+      game.dna += bonus;
+      game.log.push({day: game.day, type:'outbreak', text:`${c.name} で感染者が確認された。(+${bonus.toFixed(1)} DNA)`, countryId:c.id});
+    }
+
+    // awareness
+    const stealthMul = (1-eff.stealth);
+    const awarenessTarget = Math.min(1, ((c.D/N)*450 + (c.I/N)*9 + game.globalPanic*0.35) * stealthMul);
+    c.awareness += (awarenessTarget - c.awareness)*0.15;
+    if (c.awareness<0) c.awareness=0;
+
+    // border closure
+    const closureThreshold = 0.45 - 0.15*c.wealth;
+    const closureTarget = c.awareness > closureThreshold ? Math.min(0.95, 0.3+0.6*c.wealth) : Math.max(0, c.borderClosure-0.05);
+    c.borderClosure += (closureTarget - c.borderClosure)*0.2;
+
+    if (c.I>0 || c.E>0) worldInfectedCountries++;
+    worldI += c.I; worldE += c.E; worldD += c.D;
+    worldAlive += (N - c.D);
+  }
+
+  // migration / seeding pass (uses snapshot to avoid order bias)
+  const totalCountries = Object.keys(game.countries).length;
+  game.globalPanic = Math.min(1, worldInfectedCountries/totalCountries*0.55 + (worldD/game.totalPop)*25);
+
+  game.edges.forEach(e=>{
+    const a = game.countries[e.a], b = game.countries[e.b];
+    if (!a || !b) return;
+    const w = e.w;
+    tryIntroduce(a, b, snapshot[e.a], w, game);
+    tryIntroduce(b, a, snapshot[e.b], w, game);
+  });
+
+  // DNA trickle
+  game.dna += 0.12 * worldInfectedCountries;
+
+  // mutation for virus type
+  if (mod.mutation && game.day>4 && Math.random() < 0.035){
+    const cheap = Object.values(TRAIT_DEFS).filter(d=>!game.traits.has(d.id) && (!d.prereq || game.traits.has(d.prereq)) && traitCost(game,d)<=10);
+    if (cheap.length){
+      const pick = cheap[Math.floor(Math.random()*cheap.length)];
+      game.traits.add(pick.id);
+      game.log.push({day:game.day, type:'mutation', text:`突然変異が発生：「${pick.name}」を無償で獲得した。`});
+    }
+  }
+
+  // cure research
+  let cureGain = 0.02;
+  for (const id in game.countries){
+    const c = game.countries[id];
+    cureGain += c.wealth * Math.min(1,c.awareness*2) * 0.055;
+  }
+  cureGain += Math.min(1.2, eff.severity*0.4);
+  cureGain *= (1 - eff.drugResist);
+  cureGain *= mod.cureMul;
+  game.cure = Math.min(100, game.cure + cureGain);
+
+  checkGameOver(game, worldAlive, worldE, worldI);
+}
+
+function tryIntroduce(src, dst, srcSnap, w, game){
+  if (dst.S <= 0) return;
+  const effW = w * (1-srcSnap.borderClosure) * (1-dst.borderClosure);
+  if (effW<=0) return;
+  const pressure = effW * (srcSnap.E + srcSnap.I) / srcSnap.N;
+  if (dst.I===0 && dst.E===0){
+    const prob = 1 - Math.exp(-pressure*160);
+    if (Math.random() < prob){
+      const seed = Math.min(dst.S, 1 + Math.floor(Math.random()*4));
+      dst.S -= seed; dst.E += seed;
+    }
+  } else {
+    const trickle = Math.min(dst.S, pressure*dst.pop*0.06);
+    dst.S -= trickle; dst.E += trickle;
+  }
+}
+
+function checkGameOver(game, worldAlive, worldE, worldI){
+  if (worldAlive <= game.totalPop*0.0005){
+    game.over = true; game.result = 'win';
+    game.log.push({day:game.day, type:'end', text:'人類は絶滅した。病原体の完全勝利。'});
+    return;
+  }
+  if (game.cure>=100 && (worldE+worldI) < game.totalPop*0.00002){
+    game.over = true; game.result = 'lose';
+    game.log.push({day:game.day, type:'end', text:'治療薬が世界中に行き渡り、感染症は根絶された。'});
+    return;
+  }
+  if (game.day>3){
+    let anyInfected=false;
+    for (const id in game.countries){ const c=game.countries[id]; if (c.E>0.5||c.I>0.5){anyInfected=true;break;} }
+    if (!anyInfected && game.cure<100){
+      game.over = true; game.result = 'lose';
+      game.log.push({day:game.day, type:'end', text:'病原体は拡散に失敗し自然消滅した。'});
+    }
+  }
+}
+
+if (typeof module !== 'undefined'){
+  module.exports = { TRAIT_DEFS, createGame, stepDay, buyTrait, canBuy, traitCost, useReshuffle, aggregateTraitEffects, typeModifiers };
+}
